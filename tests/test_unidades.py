@@ -15,7 +15,7 @@ from src.evaluate import (
 )
 from src.generate import extrair_citacao
 from src.gold import amostrar_estratificado, dividir_por_secao, subconjunto_comum
-from src.ingest import Elemento, Linha, eh_titulo, segmentar
+from src.ingest import Elemento, Linha, _continua_titulo, _juntar_linhas, _normalizar_unicode, eh_titulo, segmentar
 from src.ollama_client import validar_url_local
 from src.retrieve import rrf
 from src.utils import ErroUsuario, contem_abstencao, normalizar_resposta, renderizar, tokenizar_bm25
@@ -48,6 +48,7 @@ def test_recall_e_mrr():
     assert recall_em_k(["x", "p1", "p2"], ["p1"], 2) == 1.0
     assert rr(["x", "p1"], ["p1"]) == 0.5
     assert recall_em_k(["x"], [], 5) is None
+    assert recall_em_k(["p2", "x"], ["p1", "p2"], 1) == 1.0  # evidências alternativas
 
 
 def test_extrair_citacao():
@@ -197,3 +198,21 @@ def test_mapear_evidencias_entre_segmentacoes():
         {"id": "n3", "secao": "T", "texto": "alfa beta gama delta"},
     ]
     assert mapear_evidencias([{"id": "q1", "evidencia": ["b1"]}], base, nova) == {"q1": ["n1"]}
+
+
+def test_normalizacao_unicode_preserva_simbolos_e_desfaz_ligaduras():
+    assert _normalizar_unicode("Portaria nº 671, 76,2 m³, reﬂetivo") == "Portaria nº 671, 76,2 m³, refletivo"
+
+
+def test_juntar_linhas():
+    assert _juntar_linhas(["velocidade de 15 km/", "h no pátio"]) == "velocidade de 15 km/h no pátio"
+    assert _juntar_linhas(["manu-", "tenção preventiva"]) == "manutenção preventiva"
+    assert _juntar_linhas(["Itens:", "• capacete"]) == "Itens:\n• capacete"
+
+
+def test_titulo_em_duas_linhas():
+    a = Linha("Manual de Operações do Porto", 1, 0, 189, 219, 22.0, True)
+    b = Linha("de Salvador", 1, 1, 216, 247, 22.0, True)
+    c = Linha("2.1 Localização", 1, 2, 250, 265, 22.0, True)
+    assert _continua_titulo(a, b)
+    assert not _continua_titulo(b, c)  # nova numeração inicia outro título

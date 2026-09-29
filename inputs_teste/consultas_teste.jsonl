@@ -1,0 +1,5 @@
+{"pergunta": "Qual a extensão total do cais do Porto de Salvador?", "esperada": ["p0005"]}
+{"pergunta": "Quantos portêineres o TECON Salvador possui?", "esperada": ["p0007"]}
+{"pergunta": "Qual o limite de vento para manobras de atracação em Salvador?", "esperada": ["p0013"]}
+{"pergunta": "Com que antecedência o armador deve enviar o manifesto de produtos perigosos de um navio de longo curso?", "esperada": ["p0033"]}
+{"pergunta": "Em quanto tempo a mercadoria importada sem início de despacho é considerada abandonada?", "esperada": ["p0054"]}

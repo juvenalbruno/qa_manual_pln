@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import html
 import io
 import re
 import statistics
@@ -27,6 +28,14 @@ _NUMERACAO = re.compile(r"^(\d{1,2}(?:\.\d{1,3}){0,4})\.?\s+(\S.*)$")
 _PAGINA = re.compile(r"^(p[áa]g(ina)?\.?\s*)?\d{1,4}(\s*(de|/|of)\s*\d{1,4})?$", re.IGNORECASE)
 _SUMARIO = re.compile(r"(\.\s?){4,}\s*\d+\s*$|…+\s*\d+\s*$")
 _MARCADOR_LISTA = re.compile(r"^([•▪●◦\-–*]|\(?[a-z]\)|\d{1,2}[.)])\s+")
+# Só ligaduras tipográficas são desfeitas: NFKC também trocaria "nº" por "no" e "m³" por "m3".
+_LIGADURAS = str.maketrans({"ﬀ": "ff", "ﬁ": "fi", "ﬂ": "fl", "ﬃ": "ffi", "ﬄ": "ffl", "ﬅ": "st", "ﬆ": "st"})
+
+
+def _normalizar_unicode(texto: str) -> str:
+    return unicodedata.normalize("NFC", texto).translate(_LIGADURAS)
+
+
 _FIM_FRASE = re.compile(r"(?<=[.!?;:])\s+(?=[\"'(«A-ZÁÉÍÓÚÂÊÔÃÕÇ0-9•])")
 
 
@@ -80,7 +89,7 @@ def _extrair_pagina(pagina, num: int, detectar_tabelas: bool) -> tuple[list[Linh
                 if tab.row_count < 2 or tab.col_count < 2:
                     continue
                 md = tab.to_markdown(clean=True).strip()
-                md = unicodedata.normalize("NFKC", md)
+                md = _normalizar_unicode(html.unescape(md))
                 if md:
                     caixas.append(tuple(tab.bbox))
                     tabelas.append((tab.bbox[1], md))
@@ -98,7 +107,7 @@ def _extrair_pagina(pagina, num: int, detectar_tabelas: bool) -> tuple[list[Linh
                 continue
             if caixas and _dentro(ln["bbox"], caixas):
                 continue
-            texto = unicodedata.normalize("NFKC", "".join(s["text"] for s in ln["spans"])).strip()
+            texto = _normalizar_unicode("".join(s["text"] for s in ln["spans"])).strip()
             texto = re.sub(r"\s+", " ", texto)
             negrito = all((s.get("flags", 0) & 16) or "bold" in s.get("font", "").lower() for s in spans)
             linhas.append(
@@ -192,6 +201,17 @@ def eh_titulo(linha: Linha, tamanho_corpo: float) -> bool:
     return linha.negrito and len(palavras) <= 8 and t[0].isupper() and linha.tamanho >= tamanho_corpo
 
 
+def _continua_titulo(anterior: Linha | None, linha: Linha) -> bool:
+    """Título quebrado em duas linhas: mesma fonte, linhas coladas e sem numeração na continuação."""
+    return (
+        anterior is not None
+        and anterior.tamanho == linha.tamanho
+        and anterior.negrito == linha.negrito
+        and 0 <= linha.y0 - anterior.y1 + 4 < linha.tamanho
+        and not _NUMERACAO.match(linha.texto)
+    )
+
+
 def _juntar_linhas(textos: list[str]) -> str:
     """Junta as linhas de um bloco, desfazendo hifenização e preservando itens de lista."""
     saida = ""
@@ -202,6 +222,8 @@ def _juntar_linhas(textos: list[str]) -> str:
             saida += "\n" + t
         elif re.search(r"[A-Za-zÀ-ÿ]-$", saida) and t[:1].islower():
             saida = saida[:-1] + t
+        elif saida.endswith("/"):  # "km/" + "h"
+            saida += t
         else:
             saida += " " + t
     return saida
@@ -250,10 +272,16 @@ def extrair_elementos(caminho_pdf: Path, detectar_tabelas: bool = True) -> tuple
                 itens.append((grupo[0].y0, "paragrafo", _juntar_linhas([g.texto for g in grupo])))
                 grupo.clear()
 
+        ultimo_titulo: Linha | None = None
         for l in linhas:
             if eh_titulo(l, corpo):
                 fechar_grupo()
-                itens.append((l.y0, "titulo", l.texto))
+                if itens and itens[-1][1] == "titulo" and _continua_titulo(ultimo_titulo, l):
+                    y, _, texto = itens.pop()
+                    itens.append((y, "titulo", f"{texto} {l.texto}"))
+                else:
+                    itens.append((l.y0, "titulo", l.texto))
+                ultimo_titulo = l
             else:
                 if grupo and grupo[-1].bloco != l.bloco:
                     fechar_grupo()

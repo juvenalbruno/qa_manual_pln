@@ -45,6 +45,28 @@ Preenchido por `python smoke_test.py --gravar-readme`:
 _(execute o teste de fumaça para registrar hardware, versões do Ollama, tags dos modelos e bibliotecas)_
 <!-- AMBIENTE:FIM -->
 
+## Inputs de teste
+
+[inputs_teste/](inputs_teste/) traz um manual público do Porto de Salvador em PDF, 152 perguntas de gold
+(dev e teste), consultas de teste, perguntas avulsas e casos de erro, para testar tudo sem o manual da empresa.
+Veja o roteiro em [inputs_teste/README.md](inputs_teste/README.md).
+
+## Execução com um único comando
+
+```bash
+python -m src.cli executar \
+  --manual     data/manual.pdf \
+  --gold       data/gold_test.jsonl \
+  --gold-dev   data/gold_dev.jsonl \
+  --consultas  data/consultas_teste.jsonl \
+  --perguntas  perguntas.txt \
+  --configs S0 S1 S2 S3 --repeticoes 3
+```
+
+O comando valida as entradas, confere o Ollama, indexa (ou reaproveita o índice), testa o índice, responde as
+perguntas avulsas, avalia e analisa. Com `--varrer`, ajusta tamanho de passagem e k no dev antes. Só `--manual` e
+`--gold` são obrigatórios. Veja `python -m src.cli executar --help`.
+
 ## Reprodução, etapa por etapa
 
 Todos os comandos rodam da raiz do repositório. **Argumentos de arquivo omitidos são pedidos interativamente**;
@@ -120,7 +142,7 @@ ou se o modelo de embeddings difere da configuração, pedem para rodar `indexar
 
 ## Métricas
 
-- **Recuperação:** Recall@k e MRR contra a passagem-evidência.
+- **Recuperação:** Recall@k (acerto se alguma passagem-evidência está no top-k) e MRR.
 - **Resposta:** Exact Match e F1 de tokens após normalização (minúsculas, sem pontuação, sem artigos e preposições
   frequentes). A citação "(seção X, p. N)" é removida antes da comparação. Itens `sem_resposta` valem 1 quando o
   sistema se abstém. `em_respondiveis` e `f1_respondiveis` excluem esses itens.

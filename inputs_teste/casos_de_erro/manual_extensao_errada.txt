@@ -1,0 +1,1 @@
+Este arquivo tem extensão .txt; o comando indexar deve recusá-lo.

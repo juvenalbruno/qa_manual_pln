@@ -52,9 +52,11 @@ def f1_tokens(pred: str, ref: str) -> float:
 
 
 def recall_em_k(recuperadas: list[str], evidencia: list[str], k: int) -> float | None:
+    """1 se alguma passagem-evidência está no top-k (a evidência lista passagens alternativas, p. ex.
+    a mesma informação repetida pela sobreposição entre passagens)."""
     if not evidencia:
         return None
-    return len(set(recuperadas[:k]) & set(evidencia)) / len(set(evidencia))
+    return float(bool(set(recuperadas[:k]) & set(evidencia)))
 
 
 def rr(recuperadas: list[str], evidencia: list[str]) -> float | None:

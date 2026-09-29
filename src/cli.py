@@ -324,7 +324,7 @@ def _carregar_gold(caminho: str | None, mensagem: str = "Arquivo gold (.jsonl)")
     return arq, gold
 
 
-def cmd_avaliar(a: argparse.Namespace) -> None:
+def cmd_avaliar(a: argparse.Namespace) -> Path:
     arq_gold, gold = _carregar_gold(a.gold)
     configs = _configs(a.configs)
     if a.retomar:
@@ -343,6 +343,7 @@ def cmd_avaliar(a: argparse.Namespace) -> None:
     )
     print("\n" + tabela_metricas(metrics))
     print(f"\nArquivos: {run_dir}/respostas.jsonl, {run_dir}/metrics.json")
+    return run_dir
 
 
 def cmd_validar_juiz(a: argparse.Namespace) -> None:
@@ -389,7 +390,7 @@ def cmd_validar_juiz(a: argparse.Namespace) -> None:
 # Etapa 7
 # ---------------------------------------------------------------------------
 
-def cmd_varrer(a: argparse.Namespace) -> None:
+def cmd_varrer(a: argparse.Namespace) -> Path:
     arq_gold, gold = _carregar_gold(a.gold, "Arquivo gold de desenvolvimento (.jsonl)")
     if "test" in arq_gold.name and not confirmar("O arquivo parece ser de teste; a varredura deve usar o dev. Continuar?"):
         raise ErroUsuario("Varredura cancelada.")
@@ -439,6 +440,7 @@ def cmd_varrer(a: argparse.Namespace) -> None:
     print(f"\nMelhor (F1, desempate por Recall@k): tamanho {melhor['tamanho_tokens']} tokens, k = {melhor['k']}.")
     print("Para usar: ajuste tamanho_tokens em configs/indexacao.yaml e k em configs/base.yaml, e reindexe.")
     print(f"Resultados: {run_dir}/varredura.json")
+    return run_dir
 
 
 def cmd_analisar(a: argparse.Namespace) -> None:
@@ -509,6 +511,88 @@ def cmd_classificar_erros(a: argparse.Namespace) -> None:
     arq_p = Path(meta.get("indice") or DIR_INDEX) / "passages.jsonl"
     passagens = {p["id"]: p for p in ler_jsonl(arq_p)} if arq_p.exists() else {}
     analysis.classificar_interativo(ler_jsonl(arq), run_dir / "erros_classificados.jsonl", passagens)
+
+
+# ---------------------------------------------------------------------------
+# Pipeline completo em um único comando
+# ---------------------------------------------------------------------------
+
+def _etapa(titulo: str) -> None:
+    print(f"\n{'=' * 100}\n== {titulo}\n{'=' * 100}", flush=True)
+
+
+def _verificar_modelos(configs: list[dict], params: dict, usar_juiz: bool) -> None:
+    cliente = OllamaClient(params.get("ollama_url", "http://localhost:11434"))
+    instalados = set(cliente.listar_modelos())
+    necessarios = {c["leitor"] for c in configs} | {params["embeddings"]}
+    if usar_juiz:
+        necessarios.add(configs[0]["juiz"])
+    faltando = sorted(m for m in necessarios if m not in instalados and f"{m}:latest" not in instalados)
+    if faltando:
+        raise ErroUsuario("Modelos ausentes no Ollama: " + ", ".join(faltando)
+                          + ". Rode: " + " && ".join(f"ollama pull {m}" for m in faltando))
+    print(f"Ollama OK em {cliente.url}; modelos: {', '.join(sorted(necessarios))}")
+
+
+def cmd_executar(a: argparse.Namespace) -> None:
+    """Etapas 1 a 7 em sequência, com todos os arquivos de entrada informados por parâmetro."""
+    # Valida todas as entradas antes de começar qualquer processamento demorado.
+    manual = solicitar_arquivo(a.manual, "Caminho do manual (PDF)", (".pdf",))
+    arq_gold, _ = _carregar_gold(a.gold, "Arquivo gold de teste (.jsonl)")
+    arq_dev = _carregar_gold(a.gold_dev, "Arquivo gold de desenvolvimento (.jsonl)")[0] if a.gold_dev else None
+    consultas = solicitar_arquivo(a.consultas, "Consultas de teste", (".jsonl",)) if a.consultas else None
+    perguntas = solicitar_arquivo(a.perguntas, "Perguntas avulsas", (".txt",)) if a.perguntas else None
+    if a.varrer and not arq_dev:
+        raise ErroUsuario("--varrer exige --gold-dev (a varredura nunca usa o conjunto de teste).")
+    configs = _configs(a.configs)
+    params = carregar_config_indexacao()
+    dir_indice = Path(a.indice)
+
+    _etapa("0. Ambiente")
+    _verificar_modelos(configs, params, not a.sem_juiz)
+
+    _etapa("1-2. Indexação")
+    if not a.reindexar and indice_atualizado(dir_indice, manual, params):
+        print(f"Índice em {dir_indice}/ já está atualizado para {manual}; pulando (use --reindexar para forçar).")
+    else:
+        cmd_indexar(argparse.Namespace(manual=str(manual), indice=str(dir_indice), tamanho=None,
+                                       sobreposicao=None, sem_tabelas=False))
+
+    if consultas:
+        _etapa("2. Teste do índice")
+        cmd_testar_indice(argparse.Namespace(consultas=str(consultas), indice=str(dir_indice), k=5))
+
+    if perguntas:
+        _etapa(f"4. Perguntas avulsas ({configs[-1]['nome']})")
+        cmd_perguntar(argparse.Namespace(config=configs[-1]["nome"], arquivo=str(perguntas), pergunta=None))
+
+    run_varredura = None
+    if a.varrer:
+        _etapa("7.1 Varredura de tamanho de passagem e k no desenvolvimento")
+        run_varredura = cmd_varrer(argparse.Namespace(
+            gold=str(arq_dev), manual=str(manual), config=configs[-1]["nome"], tamanhos=a.tamanhos, ks=a.ks,
+            indice=str(dir_indice), limite=a.limite, retomar=None))
+
+    _etapa("6. Avaliação")
+    run_dir = cmd_avaliar(argparse.Namespace(
+        gold=str(arq_gold), configs=[c["nome"] for c in configs], repeticoes=a.repeticoes, limite=a.limite,
+        k=None, sem_juiz=a.sem_juiz, retomar=None))
+
+    _etapa("7. Análise")
+    cmd_analisar(argparse.Namespace(
+        run=str(run_dir), gold=str(arq_gold), criterio="juiz", ks=[1, 2, 3, 4, 5, 6, 7, 8, 10, 15, 20],
+        config_curva=configs[-1]["nome"], sem_curva=False, config_erros=None, n_erros=50,
+        refazer_amostra=False, seed=42))
+
+    _etapa("Resumo")
+    linhas = [["Índice", f"{dir_indice}/"], ["Avaliação", f"{run_dir}/metrics.json"],
+              ["Análise", f"{run_dir}/analise.md"], ["Gráfico Recall@k", f"{run_dir}/recall_k.png"]]
+    if run_varredura:
+        linhas.append(["Varredura", f"{run_varredura}/varredura.json"])
+    print(tabela_markdown(["Saída", "Arquivo"], linhas))
+    print("\nPassos manuais seguintes (opcionais):")
+    print(f"  python -m src.cli validar-juiz --run {run_dir}")
+    print(f"  python -m src.cli classificar-erros --run {run_dir}")
 
 
 # ---------------------------------------------------------------------------
@@ -631,6 +715,23 @@ def construir_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("classificar-erros", help="Etapa 7: classificação manual interativa da amostra de erros")
     p.add_argument("--run")
     p.set_defaults(func=cmd_classificar_erros)
+
+    p = sub.add_parser("executar", help="Pipeline completo: indexa, testa, avalia e analisa em um só comando")
+    p.add_argument("--manual", help="manual em PDF")
+    p.add_argument("--gold", help="gold de teste (.jsonl)")
+    p.add_argument("--gold-dev", help="gold de desenvolvimento (.jsonl), usado por --varrer")
+    p.add_argument("--consultas", help="consultas de teste do índice (.jsonl), opcional")
+    p.add_argument("--perguntas", help="perguntas avulsas (.txt), opcional")
+    p.add_argument("--configs", nargs="+", default=["S0", "S1", "S2", "S3"])
+    p.add_argument("--repeticoes", type=int, default=1)
+    p.add_argument("--limite", type=int, help="avalia só N itens (amostra fixa)")
+    p.add_argument("--sem-juiz", action="store_true")
+    p.add_argument("--varrer", action="store_true", help="varre tamanho de passagem e k no dev antes da avaliação")
+    p.add_argument("--tamanhos", type=int, nargs="+", default=[300, 400, 500])
+    p.add_argument("--ks", type=int, nargs="+", default=[3, 5, 8])
+    p.add_argument("--indice", default=str(DIR_INDEX))
+    p.add_argument("--reindexar", action="store_true", help="reindexa mesmo com o índice atualizado")
+    p.set_defaults(func=cmd_executar)
     return ap
 
 
