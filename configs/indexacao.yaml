@@ -1,0 +1,6 @@
+# Parâmetros da etapa de indexação (sobrescrevíveis por argumentos do comando indexar).
+tamanho_tokens: 400        # ~300 palavras
+sobreposicao_tokens: 50
+palavras_por_token: 0.74   # 400 tokens ≈ 300 palavras em português
+detectar_tabelas: true
+lote_embeddings: 16

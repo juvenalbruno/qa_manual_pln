@@ -1,0 +1,8 @@
+pymupdf>=1.24
+bm25s>=0.2
+faiss-cpu>=1.8
+numpy>=1.26
+requests>=2.31
+pyyaml>=6.0
+matplotlib>=3.8   # gráfico Recall@k (etapa 7)
+pytest>=8.0       # testes

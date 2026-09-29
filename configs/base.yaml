@@ -1,0 +1,16 @@
+# Parâmetros comuns a todas as configurações (cada S*.yaml pode sobrescrever).
+ollama_url: http://localhost:11434
+leitor: qwen3:8b
+embeddings: bge-m3
+juiz: llama3.1:8b
+k: 5
+rrf_k: 60
+temperature: 0
+seed: 42
+num_ctx: 8192
+num_predict: 200
+think: false
+indice: index
+prompt: leitor.txt
+frases_abstencao:
+  - Não encontrado no manual

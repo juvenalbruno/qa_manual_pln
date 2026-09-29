@@ -1,0 +1,9 @@
+# S0: closed-book (sem passagens); mede o conhecimento prévio do leitor.
+nome: S0
+modo: nenhum
+prompt: leitor_sem_contexto.txt
+frases_abstencao:
+  - Não encontrado no manual
+  - não sei
+  - não tenho informaç
+  - não possuo informaç

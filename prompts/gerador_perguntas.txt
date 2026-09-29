@@ -1,0 +1,6 @@
+A seguir está um trecho de um manual técnico. Escreva UMA pergunta em português que possa ser respondida apenas com esse trecho, e a resposta correta em até 15 palavras.
+Tipo de pergunta desejado: {tipo} ({descricao_tipo}).
+A pergunta deve ser autocontida (não use "neste trecho", "acima", "segundo o texto").
+Responda em JSON: {"pergunta": "...", "resposta": "..."}
+
+Trecho (seção {secao}, p. {pagina}): {texto}

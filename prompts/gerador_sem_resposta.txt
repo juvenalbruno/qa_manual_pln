@@ -1,0 +1,9 @@
+A seguir estão os títulos das seções de um manual técnico e um trecho de exemplo, para indicar o domínio do documento.
+Escreva {n} perguntas em português que um usuário deste manual poderia plausivelmente fazer, mas cuja resposta NÃO esteja no manual (por exemplo: preços, fornecedores, datas de lançamento, comparações com outros produtos, procedimentos de áreas não cobertas pelos títulos).
+Cada pergunta deve ser específica e soar natural para o domínio.
+Responda em JSON: {"perguntas": ["...", "..."]}
+
+Títulos das seções:
+{titulos}
+
+Trecho de exemplo: {exemplo}

@@ -1,0 +1,4 @@
+# Opcional (etapa 7.5): S3 com um leitor menor, para medir o efeito do tamanho do modelo.
+nome: S3_gemma3_4b
+modo: hibrido
+leitor: gemma3:4b

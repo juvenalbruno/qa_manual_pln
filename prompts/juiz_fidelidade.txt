@@ -1,0 +1,8 @@
+Verifique se a resposta abaixo é sustentada pelas passagens fornecidas.
+Atribua 1 se toda a informação da resposta pode ser encontrada nas passagens, 0 se a resposta contém informação ausente ou contraditória em relação às passagens.
+Responda apenas com o número.
+
+Passagens:
+{passagens}
+
+Resposta: {resposta}

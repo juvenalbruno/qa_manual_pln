@@ -1,0 +1,12 @@
+# Dados da empresa e artefatos derivados: nunca versionar
+data/
+index/
+runs/
+*.pdf
+
+# Ambiente
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
