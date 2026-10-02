@@ -52,6 +52,7 @@ def test_limpar_texto():
     assert limpar_texto("A libera-\nção da carga") == "A liberação da carga"
     assert limpar_texto("linha um\nlinha dois\n\nnovo  parágrafo\x07") == "linha um linha dois\n\nnovo parágrafo"
     assert limpar_texto("ﬁscalização\t aduaneira") == "fiscalização aduaneira"
+    assert limpar_texto("até 15 km/\nh no pátio") == "até 15 km/h no pátio"
     assert limpar_texto("Ex-\nPresidente") == "Ex- Presidente"  # maiúscula: não é hifenização
 
 

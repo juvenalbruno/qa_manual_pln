@@ -114,6 +114,7 @@ def limpar_texto(t: str) -> str:
     t = t.replace("\xad\n", "").replace("\xad", "")
     t = _CONTROLE.sub("", t)
     t = re.sub(r"(\w)-[ ]*\n[ ]*(?=[a-zà-öø-ÿ])", r"\1", t)
+    t = re.sub(r"(?<=\w)/[ ]*\n[ ]*(?=\w)", "/", t)  # "km/" + "h" na linha seguinte
     partes = re.split(r"\n[ ]*\n", t)
     partes = [re.sub(r" {2,}", " ", re.sub(r"[ ]*\n[ ]*", " ", p)).strip() for p in partes]
     return "\n\n".join(p for p in partes if p)

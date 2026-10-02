@@ -124,8 +124,7 @@ def cmd_indexar(a: argparse.Namespace) -> None:
         import dataclasses
 
         cfg = cfg.com(trechos=dataclasses.replace(cfg.trechos, **mudancas))
-    client = criar_cliente(cfg)
-    _exigir_modelos(client, [cfg.modelos.embeddings])
+    client = criar_cliente(cfg)  # modelo ausente ou Ollama fora do ar viram erro claro no primeiro embed
     t0 = time.perf_counter()
     stats = indexacao.indexar(pdf, cfg, client, reservar_ppl=a.reservar_ppl)
     print(

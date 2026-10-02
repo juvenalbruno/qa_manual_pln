@@ -1,6 +1,11 @@
-# Perguntas do conjunto de avaliação do manual de teste.
-# ancora: trecho LITERAL do manual (sem diferenciar maiúsculas/espaços) que identifica a passagem-evidência.
-# tipo: factual | procedimental | sem_resposta.   consulta_teste: usada em `testar-indice`.
+# Perguntas do conjunto de avaliação do manual de teste (escritas à mão; origem "manual" no gold).
+# ancora: trecho LITERAL do texto extraído pela ingestão (sem diferenciar maiúsculas/espaços) que identifica o
+#   trecho-evidência. A ingestão junta as células de uma linha de tabela com espaços (sem "|") e descarta blocos
+#   com menos de 25 caracteres; a âncora precisa existir nos trechos, não só no PDF. O tema_id do item é o do
+#   trecho-evidência.
+# tipo: factual | procedimental | sem_resposta.
+# tema_id: só nas perguntas sem_resposta (que não têm evidência). É a seção do manual mais próxima do assunto da
+#   pergunta, sempre entre aspas ("5.1", não 5.1), e serve para a divisão dev/teste por tema.
 
 perguntas:
   # 1 Apresentação
@@ -17,16 +22,16 @@ perguntas:
   - {pergunta: "É permitido ultrapassar outra embarcação no canal de aproximação à bacia de evolução?", resposta: "Não, o trecho é de mão única e a ultrapassagem é proibida", ancora: "proibidos o cruzamento e a ultrapassagem", tipo: factual}
   - {pergunta: "Qual a extensão do Quebra-mar Norte do Porto de Salvador?", resposta: "1.420 m", ancora: "Quebra-mar Norte, com 1.420 m", tipo: factual}
   - {pergunta: "Qual a amplitude máxima de maré de sizígia em Salvador?", resposta: "cerca de 2,7 m", ancora: "amplitude máxima de sizígia em Salvador é de cerca de 2,7 m", tipo: factual}
-  - {pergunta: "Qual a extensão total do cais do Porto de Salvador?", resposta: "2.269 m", ancora: "tem 2.269 m de extensão", tipo: factual, consulta_teste: true}
+  - {pergunta: "Qual a extensão total do cais do Porto de Salvador?", resposta: "2.269 m", ancora: "tem 2.269 m de extensão", tipo: factual}
   - {pergunta: "Qual berço tem prioridade para navios de cruzeiro?", resposta: "o Berço 201", ancora: "tem prioridade para navios de cruzeiro", tipo: factual}
-  - {pergunta: "Qual a profundidade do Berço 202?", resposta: "11,5 m", ancora: "Armazéns 3 e 4|11,5 m", tipo: factual}
+  - {pergunta: "Qual a profundidade do Berço 202?", resposta: "11,5 m", ancora: "202 Armazéns 3 e 4 11,5 m", tipo: factual}
   - {pergunta: "Qual a folga mínima abaixo da quilha no Berço 611?", resposta: "0,5 m", ancora: "folga mínima abaixo da quilha é de 0,5 m", tipo: factual}
   - {pergunta: "O Porto de Salvador fornece energia elétrica aos navios atracados?", resposta: "Não", ancora: "não fornece energia elétrica às embarcações", tipo: factual}
   - {pergunta: "Qual a capacidade da balança rodoviária do porto?", resposta: "80 t", ancora: "balança rodoviária com capacidade de 80 t", tipo: factual}
   - {pergunta: "Como um caminhão consegue entrar no Pátio de Acesso do porto?", resposta: "mediante pré-agendamento", ancora: "A entrada no Pátio de Acesso depende de", tipo: procedimental}
 
   # 3 TECON Salvador
-  - {pergunta: "Quantos portêineres o TECON Salvador possui?", resposta: "9 portêineres", ancora: "opera com 9 portêineres", tipo: factual, consulta_teste: true}
+  - {pergunta: "Quantos portêineres o TECON Salvador possui?", resposta: "9 portêineres", ancora: "opera com 9 portêineres", tipo: factual}
   - {pergunta: "Qual a capacidade anual do TECON Salvador?", resposta: "553 mil TEUs", ancora: "capacidade anual do terminal é de 553 mil TEUs", tipo: factual}
   - {pergunta: "Quantos TEUs o TECON Salvador movimentou em 2024?", resposta: "450.093 TEUs", ancora: "movimentou 450.093 TEUs", tipo: factual}
   - {pergunta: "Qual a média de movimentos por portêiner por hora no TECON?", resposta: "26 movimentos por hora", ancora: "média de 26 movimentos por portêiner por hora", tipo: factual}
@@ -46,9 +51,10 @@ perguntas:
   - {pergunta: "Em quais manobras a praticagem é obrigatória em Salvador?", resposta: "atracação e desatracação, fundeio e suspender, e movimentação de plataformas", ancora: "A praticagem é obrigatória nas manobras de atracação e desatracação", tipo: factual}
   - {pergunta: "Onde fica o Ponto de Espera do Prático?", resposta: "em 13°00,78' S e 038°33,74' W, na altura do Farol da Barra", ancora: "na altura do Farol da Barra", tipo: factual}
   - {pergunta: "Quantos práticos manobram navios com LOA de 299 m ou mais e boca acima de 42 m no TECON?", resposta: "2 práticos", ancora: "manobram com 2 práticos a bordo", tipo: factual}
-  - {pergunta: "Quantos rebocadores são exigidos para atracar um navio de 250 m?", resposta: "2 rebocadores", ancora: "de 201 a 299 m|2", tipo: factual}
   - {pergunta: "Qual a tração estática mínima exigida dos rebocadores?", resposta: "superior a 40 t de bollard pull", ancora: "superior a 40 t", tipo: factual}
-  - {pergunta: "Qual o limite de vento para manobras de atracação em Salvador?", resposta: "20 nós", ancora: "limitadas a ventos de até 20 nós", tipo: factual, consulta_teste: true}
+  # Sem pergunta sobre o número de rebocadores por faixa de LOA: as linhas da tabela da seção 5.2 têm menos de
+  # 25 caracteres ("de 201 a 299 m 2") e a ingestão as descarta, então a resposta não existe nos trechos.
+  - {pergunta: "Qual o limite de vento para manobras de atracação em Salvador?", resposta: "20 nós", ancora: "limitadas a ventos de até 20 nós", tipo: factual}
   - {pergunta: "Como deve ser feita a manobra de um navio de grande porte no TECON com vento entre 15 e 20 nós?", resposta: "sem giro", ancora: "com vento entre 15 e 20 nós, a manobra é feita sem giro", tipo: procedimental}
   - {pergunta: "Por qual bordo atracam os navios com LOA superior a 305 m?", resposta: "sempre por bombordo", ancora: "atracam sempre por bombordo", tipo: factual}
   - {pergunta: "Em que condições é proibido abastecer navios com combustível?", resposta: "vento acima de 15 nós entre 135° e 225°, acima de 20 nós nas demais direções ou ondas acima de 1,2 m", ancora: "ondas acima de 1,2 m", tipo: factual}
@@ -61,7 +67,7 @@ perguntas:
   - {pergunta: "Quais são os turnos do trabalho portuário avulso em Salvador?", resposta: "7h às 13h, 13h às 19h, 19h à 1h e 1h às 7h", ancora: "quatro turnos de seis horas", tipo: factual}
   - {pergunta: "Qual o horário do atendimento administrativo da CODEBA?", resposta: "segunda a sexta, das 8h às 12h e das 13h às 17h", ancora: "das 8h às 12h e das 13h às 17h", tipo: factual}
   - {pergunta: "O que fazer em caso de perda do crachá de acesso ao porto?", resposta: "comunicar imediatamente à segurança portuária", ancora: "A perda do crachá deve ser comunicada imediatamente à segurança portuária", tipo: procedimental}
-  - {pergunta: "Qual a velocidade máxima de veículos nos trechos com operação de carga?", resposta: "15 km/h", ancora: "15 km/h nos trechos com operação", tipo: factual}
+  - {pergunta: "Qual a velocidade máxima de veículos nos trechos com operação de carga?", resposta: "15 km/h", ancora: "nos trechos com operação de carga", tipo: factual}
   - {pergunta: "Qual a penalidade para o condutor flagrado acima do limite de velocidade no porto?", resposta: "bloqueio do cadastro de acesso por 7, 14, 21 ou 30 dias", ancora: "bloqueado por 7, 14, 21 ou 30 dias", tipo: factual}
 
   # 7 Tarifas
@@ -110,7 +116,7 @@ perguntas:
   # 13 Cargas perigosas
   - {pergunta: "A que classe pertencem os números ONU que começam com zero?", resposta: "à Classe 1, explosivos", ancora: "Os números que começam com zero", tipo: factual}
   - {pergunta: "Qual subclasse do Código IMDG corresponde aos peróxidos orgânicos?", resposta: "5.2", ancora: "5.2 peróxidos orgânicos", tipo: factual}
-  - {pergunta: "Com que antecedência o armador deve enviar o manifesto de produtos perigosos de um navio de longo curso?", resposta: "24 horas antes da chegada", ancora: "antecedência mínima de 24 horas da chegada", tipo: factual, consulta_teste: true}
+  - {pergunta: "Com que antecedência o armador deve enviar o manifesto de produtos perigosos de um navio de longo curso?", resposta: "24 horas antes da chegada", ancora: "antecedência mínima de 24 horas da chegada", tipo: factual}
   - {pergunta: "Que documentos o operador portuário deve entregar ao OGMO antes da escalação para operar carga perigosa?", resposta: "declaração de mercadorias perigosas, ficha de segurança e relação das mercadorias com quantidades, 24 horas antes", ancora: "a declaração de mercadorias perigosas, a ficha de segurança", tipo: procedimental}
   - {pergunta: "Por quanto tempo o documento de transporte de mercadoria perigosa deve ser guardado?", resposta: "pelo menos 3 meses", ancora: "por pelo menos 3 meses", tipo: factual}
   - {pergunta: "Qual o tamanho mínimo das placas de risco em contêineres com carga perigosa?", resposta: "250 mm por 250 mm", ancora: "placas de no mínimo 250 mm por 250 mm", tipo: factual}
@@ -159,7 +165,7 @@ perguntas:
   - {pergunta: "Quais são os canais de conferência na exportação?", resposta: "verde, laranja e vermelho", ancora: "verde (desembaraço automático), laranja", tipo: factual}
 
   # 20 Abandono
-  - {pergunta: "Em quanto tempo a mercadoria importada sem início de despacho é considerada abandonada?", resposta: "90 dias após a descarga", ancora: "não é iniciado em 90 dias após a descarga", tipo: factual, consulta_teste: true}
+  - {pergunta: "Em quanto tempo a mercadoria importada sem início de despacho é considerada abandonada?", resposta: "90 dias após a descarga", ancora: "não é iniciado em 90 dias após a descarga", tipo: factual}
 
   # 21 Contêineres (logística)
   - {pergunta: "Qual o volume interno de um contêiner 40 pés high cube?", resposta: "76,2 m³", ancora: "76,2 m³", tipo: factual}
@@ -174,32 +180,33 @@ perguntas:
   - {pergunta: "Quantos níveis de proteção o Código ISPS prevê?", resposta: "três", ancora: "prevê três níveis de proteção", tipo: factual}
   - {pergunta: "Qual a validade da Declaração de Cumprimento emitida pela CONPORTOS?", resposta: "5 anos", ancora: "com validade de 5 anos", tipo: factual}
 
-  # Sem resposta no manual (plausíveis para o domínio)
-  - {pergunta: "Qual o salário médio de um prático na Bahia?", tipo: sem_resposta}
-  - {pergunta: "Qual o telefone da central de segurança do Porto de Salvador?", tipo: sem_resposta}
-  - {pergunta: "Quantos acidentes de trabalho ocorreram no Porto de Salvador em 2024?", tipo: sem_resposta}
-  - {pergunta: "Qual o fabricante dos portêineres do TECON Salvador?", tipo: sem_resposta}
-  - {pergunta: "Quem é o atual presidente da CODEBA?", tipo: sem_resposta}
-  - {pergunta: "Qual o valor da multa por não usar capacete na área portuária?", tipo: sem_resposta}
-  - {pergunta: "Quanto custa o curso de formação de sinaleiro?", tipo: sem_resposta}
-  - {pergunta: "Qual o horário de funcionamento do ambulatório médico do porto?", tipo: sem_resposta}
-  - {pergunta: "Qual o limite de ruído permitido na cabine dos portêineres?", tipo: sem_resposta}
-  - {pergunta: "Qual a validade do certificado de treinamento em cargas perigosas?", tipo: sem_resposta}
-  - {pergunta: "Quantos navios de cruzeiro atracaram em Salvador na temporada 2025/2026?", tipo: sem_resposta}
-  - {pergunta: "Qual o valor da armazenagem diária de um contêiner reefer no TECON?", tipo: sem_resposta}
-  - {pergunta: "Qual o prazo de validade dos extintores de incêndio das empilhadeiras?", tipo: sem_resposta}
-  - {pergunta: "Com que frequência é feita a dragagem de manutenção do canal de acesso?", tipo: sem_resposta}
-  - {pergunta: "Quantos funcionários a CODEBA possui?", tipo: sem_resposta}
-  - {pergunta: "Qual o tempo médio de espera dos navios nos fundeadouros de Salvador?", tipo: sem_resposta}
-  - {pergunta: "Qual a distância entre o Porto de Salvador e o aeroporto da cidade?", tipo: sem_resposta}
-  - {pergunta: "Qual o preço do combustível marítimo fornecido aos navios em Salvador?", tipo: sem_resposta}
-  - {pergunta: "Qual o calado máximo autorizado no Porto de Suape?", tipo: sem_resposta}
-  - {pergunta: "Qual empresa faz a coleta de resíduos de navios no Porto de Salvador?", tipo: sem_resposta}
-  - {pergunta: "Qual a altura máxima de empilhamento de contêineres no pátio do TECON?", tipo: sem_resposta}
-  - {pergunta: "Qual a alíquota do Imposto de Importação aplicada ao trigo?", tipo: sem_resposta}
-  - {pergunta: "Qual o valor da diária de sobre-estadia de um contêiner de 40 pés?", tipo: sem_resposta}
-  - {pergunta: "Quantos guindastes móveis sobre pneus (MHC) opera o Cais Comercial?", tipo: sem_resposta}
-  - {pergunta: "Qual a temperatura da água do mar no Porto de Salvador no verão?", tipo: sem_resposta}
+  # Sem resposta no manual (plausíveis para o domínio). tema_id = seção mais próxima do assunto da pergunta;
+  # a pergunta acompanha esse tema na divisão dev/teste.
+  - {pergunta: "Qual o salário médio de um prático na Bahia?", tipo: sem_resposta, tema_id: "5.1"}
+  - {pergunta: "Qual o telefone da central de segurança do Porto de Salvador?", tipo: sem_resposta, tema_id: "6.2"}
+  - {pergunta: "Quantos acidentes de trabalho ocorreram no Porto de Salvador em 2024?", tipo: sem_resposta, tema_id: "9.2"}
+  - {pergunta: "Qual o fabricante dos portêineres do TECON Salvador?", tipo: sem_resposta, tema_id: "3.1"}
+  - {pergunta: "Quem é o atual presidente da CODEBA?", tipo: sem_resposta, tema_id: "2.1"}
+  - {pergunta: "Qual o valor da multa por não usar capacete na área portuária?", tipo: sem_resposta, tema_id: "6.3"}
+  - {pergunta: "Quanto custa o curso de formação de sinaleiro?", tipo: sem_resposta, tema_id: "10.3"}
+  - {pergunta: "Qual o horário de funcionamento do ambulatório médico do porto?", tipo: sem_resposta, tema_id: "6.1"}
+  - {pergunta: "Qual o limite de ruído permitido na cabine dos portêineres?", tipo: sem_resposta, tema_id: "12"}
+  - {pergunta: "Qual a validade do certificado de treinamento em cargas perigosas?", tipo: sem_resposta, tema_id: "13.6"}
+  - {pergunta: "Quantos navios de cruzeiro atracaram em Salvador na temporada 2025/2026?", tipo: sem_resposta, tema_id: "4"}
+  - {pergunta: "Qual o valor da armazenagem diária de um contêiner reefer no TECON?", tipo: sem_resposta, tema_id: "3.2"}
+  - {pergunta: "Qual o prazo de validade dos extintores de incêndio das empilhadeiras?", tipo: sem_resposta, tema_id: "11.3"}
+  - {pergunta: "Com que frequência é feita a dragagem de manutenção do canal de acesso?", tipo: sem_resposta, tema_id: "2.2"}
+  - {pergunta: "Quantos funcionários a CODEBA possui?", tipo: sem_resposta, tema_id: "2.1"}
+  - {pergunta: "Qual o tempo médio de espera dos navios nos fundeadouros de Salvador?", tipo: sem_resposta, tema_id: "5.4"}
+  - {pergunta: "Qual a distância entre o Porto de Salvador e o aeroporto da cidade?", tipo: sem_resposta, tema_id: "2.4"}
+  - {pergunta: "Qual o preço do combustível marítimo fornecido aos navios em Salvador?", tipo: sem_resposta, tema_id: "7"}
+  - {pergunta: "Qual o calado máximo autorizado no Porto de Suape?", tipo: sem_resposta, tema_id: "5.5"}
+  - {pergunta: "Qual empresa faz a coleta de resíduos de navios no Porto de Salvador?", tipo: sem_resposta, tema_id: "15.4"}
+  - {pergunta: "Qual a altura máxima de empilhamento de contêineres no pátio do TECON?", tipo: sem_resposta, tema_id: "11.2"}
+  - {pergunta: "Qual a alíquota do Imposto de Importação aplicada ao trigo?", tipo: sem_resposta, tema_id: "19.2"}
+  - {pergunta: "Qual o valor da diária de sobre-estadia de um contêiner de 40 pés?", tipo: sem_resposta, tema_id: "21.3"}
+  - {pergunta: "Quantos guindastes móveis sobre pneus (MHC) opera o Cais Comercial?", tipo: sem_resposta, tema_id: "2.3"}
+  - {pergunta: "Qual a temperatura da água do mar no Porto de Salvador no verão?", tipo: sem_resposta, tema_id: "2.1"}
 
 perguntas_avulsas:
   - Qual o calado máximo recomendado para os berços do TECON?
