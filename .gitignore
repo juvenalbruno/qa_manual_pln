@@ -2,13 +2,22 @@
 data/
 index/
 runs/
+models/
+*.gguf
 *.pdf
+Modelfile
 
 # Ambiente
+.venv
 .venv/
+*.nosync/
 __pycache__/
 *.pyc
+*.egg-info/
 .pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 .DS_Store
 
 # PDFs de teste gerados a partir de fontes públicas (não são dados da empresa)

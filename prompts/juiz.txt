@@ -1,7 +1,0 @@
-Compare a resposta do sistema com a resposta de referência para a pergunta abaixo.
-Atribua 2 se a resposta do sistema está correta e completa, 1 se está parcialmente correta, 0 se está incorreta ou vazia.
-Responda apenas com o número.
-
-Pergunta: {pergunta}
-Referência: {resposta_ref}
-Resposta do sistema: {resposta}
