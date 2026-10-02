@@ -279,30 +279,32 @@ def avaliar(
 
     run_id = retomar or novo_run_id("avaliar")
     run_dir = Path(cfg.paths.runs_dir) / run_id
+    descricao = {
+        "run_id": run_id,
+        "criado_em": agora_iso(),
+        "versao_codigo": versao_codigo(),
+        "gold": str(gold_path),
+        "gold_sha256": hash_gold,
+        "n_perguntas": len(gold_lista),
+        "leitores": leitores,
+        "repeticoes": repeticoes,
+        "limite": limite,
+        "configs": {c.nome: c.como_dict() for c in configs},
+    }
     if retomar:
         if not (run_dir / "config.json").is_file():
             raise ErroUsuario(f"execução {retomar} não encontrada em {cfg.paths.runs_dir}/")
         anterior = ler_json(run_dir / "config.json")
         if anterior.get("gold_sha256") != hash_gold:
             raise ErroUsuario(f"o gold {gold_path} difere do usado em {retomar}; não é possível retomar.")
+        for campo in ("configs", "leitores", "repeticoes", "limite"):
+            if anterior.get(campo) != json.loads(json.dumps(descricao[campo])):
+                raise ErroUsuario(f"'{campo}' difere do usado em {retomar}; retome com os mesmos argumentos.")
     criar_run_dir(cfg.paths.runs_dir, run_id)
     handler = anexar_log_arquivo(run_dir / "log.txt")
     try:
-        escrever_json(
-            run_dir / "config.json",
-            {
-                "run_id": run_id,
-                "criado_em": agora_iso(),
-                "versao_codigo": versao_codigo(),
-                "gold": str(gold_path),
-                "gold_sha256": hash_gold,
-                "n_perguntas": len(gold_lista),
-                "leitores": leitores,
-                "repeticoes": repeticoes,
-                "limite": limite,
-                "configs": {c.nome: c.como_dict() for c in configs},
-            },
-        )
+        if not retomar:
+            escrever_json(run_dir / "config.json", descricao)
         respostas = run_dir / "respostas.jsonl"
         feitos = {_chave(r) for r in ler_jsonl(respostas)} if respostas.is_file() else set()
         if feitos:
@@ -327,6 +329,8 @@ def avaliar(
             ]
             if not pendentes:
                 continue
+            if precisa_denso:
+                client.embed(cfg.modelos.embeddings, ["aquecimento"])
             aquecer(client, cfg.modelo_leitor(leitor), cfg)
             for c, rep, it in pendentes:
                 reg = perguntar(

@@ -136,6 +136,9 @@ def test_erros_de_entrada(cfg, indices, client_fake, tmp_path):
     configs = [config.carregar_experimento("S3")]
     with pytest.raises(ErroUsuario, match="não encontrada"):
         avaliar(gold, configs, ["base"], 1, client_fake, retomar="nao-existe")
+    run_dir, _ = avaliar(gold, configs, ["base"], 1, client_fake, limite=1, bertscore_fn=_bertscore_falso)
+    with pytest.raises(ErroUsuario, match="leitores"):
+        avaliar(gold, configs, ["ajustado"], 1, client_fake, retomar=run_dir.name, limite=1)
     sem_modelo = OllamaFake(resposta=leitor_extrativo, modelos=["bge-m3:latest"])
     with pytest.raises(ModeloAusente, match="ollama pull qwen3:4b"):
         avaliar(gold, configs, ["base"], 1, sem_modelo)
