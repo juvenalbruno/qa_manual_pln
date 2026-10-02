@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import bm25s
 
 from .chunking import Trecho
 from .io_utils import ErroUsuario, escrever_json, ler_json
 from .tokenize_pt import tokenizar_cfg
+
+if TYPE_CHECKING:
+    from .config import Config
 
 log = logging.getLogger(__name__)
 _VAZIO = "_vazio_"  # token de um trecho sem tokens (o bm25s não aceita documento vazio)
@@ -18,7 +22,7 @@ _VAZIO = "_vazio_"  # token de um trecho sem tokens (o bm25s não aceita documen
 class IndiceBM25:
     """Índice BM25 carregado em memória, com o mapeamento posição -> id do trecho."""
 
-    def __init__(self, retriever: bm25s.BM25, ids: list[str], cfg):
+    def __init__(self, retriever: bm25s.BM25, ids: list[str], cfg: Config):
         self.retriever = retriever
         self.ids = ids
         self.cfg = cfg
@@ -41,7 +45,7 @@ def _dir(cfg) -> Path:
     return Path(cfg.paths.index_dir)
 
 
-def construir(trechos: list[Trecho], cfg) -> IndiceBM25:
+def construir(trechos: list[Trecho], cfg: Config) -> IndiceBM25:
     """Indexa os trechos e grava ``index/bm25/`` e ``index/bm25_ids.json``."""
     corpus = [tokenizar_cfg(t.texto, cfg) or [_VAZIO] for t in trechos]
     retriever = bm25s.BM25(k1=cfg.bm25.k1, b=cfg.bm25.b)
@@ -54,7 +58,7 @@ def construir(trechos: list[Trecho], cfg) -> IndiceBM25:
     return IndiceBM25(retriever, ids, cfg)
 
 
-def carregar(cfg) -> IndiceBM25:
+def carregar(cfg: Config) -> IndiceBM25:
     """Carrega o índice gravado por :func:`construir`."""
     destino = _dir(cfg)
     if not (destino / "bm25").is_dir() or not (destino / "bm25_ids.json").is_file():

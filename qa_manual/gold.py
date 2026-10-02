@@ -15,6 +15,7 @@ import random
 import re
 from collections import defaultdict
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from tqdm import tqdm
 
@@ -22,6 +23,9 @@ from . import prompts
 from .chunking import Trecho
 from .io_utils import ErroUsuario, sha256_texto
 from .ollama_client import OllamaClient
+
+if TYPE_CHECKING:
+    from .config import Config
 
 log = logging.getLogger(__name__)
 
@@ -103,7 +107,7 @@ def extrair_json(texto: str) -> dict | None:
 
 
 def gerar_json(
-    client: OllamaClient, modelo: str, prompt: str, chaves: tuple[str, ...], cfg, contagem: dict
+    client: OllamaClient, modelo: str, prompt: str, chaves: tuple[str, ...], cfg: Config, contagem: dict
 ) -> dict | None:
     """Chama o gerador até ``MAX_TENTATIVAS`` vezes até obter um JSON com ``chaves`` preenchidas.
 
@@ -121,7 +125,9 @@ def gerar_json(
     return None
 
 
-def gerar_candidatas(cfg, client: OllamaClient, trechos: list[Trecho], n: int | None = None) -> tuple[list[dict], dict]:
+def gerar_candidatas(
+    cfg: Config, client: OllamaClient, trechos: list[Trecho], n: int | None = None
+) -> tuple[list[dict], dict]:
     """Gera perguntas candidatas com o modelo ``modelos.gerador``.
 
     ``n * (1 - frac_sem_resposta)`` trechos recebem uma pergunta respondível (60% factual, 40% procedimental)

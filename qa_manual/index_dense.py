@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import faiss
 import numpy as np
@@ -12,6 +13,9 @@ from tqdm import tqdm
 from .chunking import Trecho
 from .io_utils import ErroUsuario, escrever_json, ler_json, lotes
 from .ollama_client import OllamaClient
+
+if TYPE_CHECKING:
+    from .config import Config
 
 log = logging.getLogger(__name__)
 
@@ -23,7 +27,7 @@ def normalizar_l2(m: np.ndarray) -> np.ndarray:
     return (m / normas).astype(np.float32)
 
 
-def embed(textos: list[str], cfg, client: OllamaClient, progresso: bool = False) -> np.ndarray:
+def embed(textos: list[str], cfg: Config, client: OllamaClient, progresso: bool = False) -> np.ndarray:
     """Embeddings dos textos em lotes de ``denso.batch_size``.
 
     Returns:
@@ -49,7 +53,7 @@ def embed(textos: list[str], cfg, client: OllamaClient, progresso: bool = False)
 class IndiceDenso:
     """Índice FAISS carregado em memória."""
 
-    def __init__(self, index: faiss.Index, ids: list[str], cfg, client: OllamaClient):
+    def __init__(self, index: faiss.Index, ids: list[str], cfg: Config, client: OllamaClient):
         if index.ntotal != len(ids):
             raise ErroUsuario("index/dense.faiss e index/dense_ids.json estão inconsistentes; rode `indexar`.")
         self.index = index
@@ -74,7 +78,7 @@ class IndiceDenso:
         return self.buscar_vetor(self.vetor(pergunta), k)
 
 
-def construir(trechos: list[Trecho], cfg, client: OllamaClient) -> IndiceDenso:
+def construir(trechos: list[Trecho], cfg: Config, client: OllamaClient) -> IndiceDenso:
     """Calcula os embeddings dos trechos e grava ``index/dense.faiss`` e ``index/dense_ids.json``."""
     matriz = embed([t.texto for t in trechos], cfg, client, progresso=True)
     index = faiss.IndexFlatIP(cfg.denso.dimensao)
@@ -88,7 +92,7 @@ def construir(trechos: list[Trecho], cfg, client: OllamaClient) -> IndiceDenso:
     return IndiceDenso(index, ids, cfg, client)
 
 
-def carregar(cfg, client: OllamaClient) -> IndiceDenso:
+def carregar(cfg: Config, client: OllamaClient) -> IndiceDenso:
     """Carrega o índice gravado por :func:`construir`."""
     destino = Path(cfg.paths.index_dir)
     if not (destino / "dense.faiss").is_file() or not (destino / "dense_ids.json").is_file():

@@ -1,7 +1,7 @@
-"""Consistência dos inputs de teste (``inputs_teste/``) com a ingestão e o agrupamento atuais, sem Ollama.
+"""Consistência do exemplo público (``docs/exemplos/porto_salvador/``) com a ingestão e os trechos, sem Ollama.
 
 Se algum teste falhar depois de mudar ``configs/base.yaml``, ``qa_manual.ingest`` ou ``qa_manual.chunking``, rode
-``inputs_teste/gerar_inputs.py`` para refazer o gold.
+``docs/exemplos/porto_salvador/gerar_inputs.py`` para refazer o gold.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from qa_manual.io_utils import RAIZ, ler_jsonl
 from qa_manual.ollama_client import OllamaFake
 from qa_manual.retrieve import recuperar
 
-DIR = RAIZ / "inputs_teste"
+DIR = RAIZ / "docs" / "exemplos" / "porto_salvador"
 PDF = DIR / "manual_porto_salvador.pdf"
 ERROS = DIR / "casos_de_erro"
 ARQUIVOS_GOLD = {"dev": DIR / "gold_dev.jsonl", "test": DIR / "gold_test.jsonl"}
@@ -21,7 +21,7 @@ CAMPOS = ("id", "pergunta", "resposta_ref", "evidencia", "tipo", "tema_id", "ori
 MIN_ITENS = 100
 MIN_RECALL_BM25 = 0.8
 
-pytestmark = pytest.mark.skipif(not PDF.is_file(), reason="rode inputs_teste/gerar_inputs.py para gerar o PDF")
+pytestmark = pytest.mark.skipif(not PDF.is_file(), reason=f"rode {DIR}/gerar_inputs.py para gerar o PDF")
 
 
 @pytest.fixture(scope="module")

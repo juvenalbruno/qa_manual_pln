@@ -11,10 +11,13 @@ import logging
 import re
 import unicodedata
 from collections.abc import Callable
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 from urllib.parse import urlparse
 
 from .io_utils import ErroUsuario
+
+if TYPE_CHECKING:
+    from .config import Config
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +42,7 @@ def instrucao_modelo(modelo: str) -> str:
     if modelo in MODELOS_CRIADOS_LOCALMENTE or modelo.endswith("-manual:4b"):
         return (
             f"modelo {modelo} ausente; crie com `ollama create {modelo} -f Modelfile` "
-            "(ver README, seção do ajuste fino no Colab)"
+            "(ver docs/README.md, seção Ajuste fino no Colab)"
         )
     return f"modelo {modelo} ausente; rode `ollama pull {modelo}`"
 
@@ -65,7 +68,9 @@ def validar_host_local(host: str) -> str:
 class OllamaClient(Protocol):
     """Interface usada pelo restante do código (permite injetar :class:`OllamaFake` nos testes)."""
 
-    def embed(self, model: str, input: list[str]) -> list[list[float]]: ...
+    def embed(self, model: str, input: list[str]) -> list[list[float]]:
+        """Embeddings de uma lista de textos."""
+        ...
 
     def chat(
         self,
@@ -74,9 +79,13 @@ class OllamaClient(Protocol):
         options: dict,
         think: bool | None = None,
         format: str | None = None,
-    ) -> dict: ...
+    ) -> dict:
+        """Uma rodada de chat; devolve ``{"content", "model", "prompt_eval_count", "eval_count"}``."""
+        ...
 
-    def modelos_disponiveis(self) -> list[str]: ...
+    def modelos_disponiveis(self) -> list[str]:
+        """Nomes dos modelos instalados."""
+        ...
 
 
 class OllamaReal:
@@ -164,7 +173,7 @@ class OllamaReal:
             return "?"
 
 
-def criar_cliente(cfg) -> OllamaReal:
+def criar_cliente(cfg: Config) -> OllamaReal:
     """Cliente real a partir de ``cfg.ollama``."""
     return OllamaReal(cfg.ollama.host, cfg.ollama.timeout_s)
 
@@ -218,6 +227,7 @@ class OllamaFake:
         self.n_textos_embed = 0
 
     def embed(self, model: str, input: list[str]) -> list[list[float]]:
+        """Vetores de :func:`vetor_hash`."""
         self.n_textos_embed += len(input)
         return [vetor_hash(t, self.dimensao) for t in input]
 
@@ -229,6 +239,7 @@ class OllamaFake:
         think: bool | None = None,
         format: str | None = None,
     ) -> dict:
+        """Registra a chamada e devolve o texto fixo ou o da função ``resposta``."""
         prompt = messages[-1]["content"]
         self.chamadas_chat.append(
             {"model": model, "prompt": prompt, "options": dict(options), "think": think, "format": format}
@@ -242,7 +253,9 @@ class OllamaFake:
         }
 
     def modelos_disponiveis(self) -> list[str]:
+        """Modelos configurados no construtor."""
         return list(self.modelos)
 
     def versao(self) -> str:
+        """Versão fictícia."""
         return "fake"

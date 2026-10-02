@@ -1,9 +1,9 @@
-"""Gera os arquivos de entrada de teste a partir das fontes em inputs_teste/fonte/.
+"""Gera os arquivos de entrada de teste a partir das fontes em docs/exemplos/porto_salvador/fonte/.
 
 Uso (da raiz do repositório):
-    .venv/bin/python inputs_teste/gerar_inputs.py
+    .venv/bin/python docs/exemplos/porto_salvador/gerar_inputs.py
 
-Saídas em inputs_teste/:
+Saídas em docs/exemplos/porto_salvador/:
     manual_porto_salvador.pdf   manual de teste (conteúdo compilado de fontes públicas)
     gold_dev.jsonl, gold_test.jsonl
     perguntas.txt               perguntas avulsas para `qa-manual perguntar --arquivo`
@@ -28,7 +28,7 @@ from pathlib import Path
 import pymupdf
 import yaml
 
-RAIZ = Path(__file__).resolve().parent.parent
+RAIZ = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(RAIZ))  # permite rodar o script sem `pip install -e .`
 
 from qa_manual import chunking, config, gold, ingest  # noqa: E402

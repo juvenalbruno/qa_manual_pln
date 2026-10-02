@@ -5,8 +5,12 @@ from __future__ import annotations
 import re
 import unicodedata
 from functools import lru_cache
+from typing import TYPE_CHECKING
 
 from .io_utils import ErroUsuario
+
+if TYPE_CHECKING:
+    from .config import Config
 
 _NAO_ALFANUMERICO = re.compile(r"[\W_]+")
 
@@ -61,6 +65,6 @@ def tokenizar(texto: str, remover_stopwords: bool = True, manter_acentos: bool =
     return tokens
 
 
-def tokenizar_cfg(texto: str, cfg) -> list[str]:
+def tokenizar_cfg(texto: str, cfg: Config) -> list[str]:
     """:func:`tokenizar` com as opções de ``cfg.bm25``."""
     return tokenizar(texto, cfg.bm25.remover_stopwords, cfg.bm25.manter_acentos)

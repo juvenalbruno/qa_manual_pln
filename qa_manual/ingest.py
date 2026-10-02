@@ -14,10 +14,14 @@ import unicodedata
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pymupdf
 
 from .io_utils import ErroUsuario
+
+if TYPE_CHECKING:
+    from .config import Config
 
 log = logging.getLogger(__name__)
 
@@ -204,7 +208,7 @@ def _verificar_camada_texto(blocos: list[tuple[int, str]], n_paginas: int) -> No
         raise ErroUsuario("PDF sem texto; rode OCR local (ocrmypdf) antes")
 
 
-def construir_paragrafos(pdf_path: Path, cfg, info: dict | None = None) -> list[Paragrafo]:
+def construir_paragrafos(pdf_path: Path, cfg: Config, info: dict | None = None) -> list[Paragrafo]:
     """Passos 1 e 2 completos: PDF -> parágrafos com tema e página.
 
     Args:

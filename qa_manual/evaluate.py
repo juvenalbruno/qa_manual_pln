@@ -11,6 +11,7 @@ import logging
 import math
 from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pandas as pd
 from tqdm import tqdm
@@ -36,6 +37,9 @@ from .io_utils import (
 from .ollama_client import ModeloAusente, OllamaClient, instrucao_modelo, modelo_presente
 from .pipeline import perguntar
 
+if TYPE_CHECKING:
+    from .config import Config
+
 log = logging.getLogger(__name__)
 
 # Paleta categórica validada (slots 1 e 2) e tintas neutras para os gráficos estáticos.
@@ -60,7 +64,7 @@ def verificar_modelos(client: OllamaClient, modelos: list[str]) -> None:
             raise ModeloAusente(instrucao_modelo(m))
 
 
-def aquecer(client: OllamaClient, modelo: str, cfg) -> None:
+def aquecer(client: OllamaClient, modelo: str, cfg: Config) -> None:
     """Carrega o modelo na memória antes de medir latência (a primeira chamada inclui o carregamento)."""
     opcoes = cfg.decodificacao.opcoes() | {"num_predict": 1}
     client.chat(
@@ -114,7 +118,7 @@ def localizar_perplexidade(runs_dir: Path, explicito: Path | None) -> Path | Non
 def calcular_metricas(
     registros: list[dict],
     gold: dict[str, dict],
-    cfg,
+    cfg: Config,
     run_dir: Path,
     bertscore_fn: BertscoreFn | None = None,
     perplexidade: dict | None = None,
@@ -345,6 +349,8 @@ def avaliar(
         ppl_arq = localizar_perplexidade(cfg.paths.runs_dir, perplexidade_path)
         ppl = None
         if ppl_arq:
+            if perplexidade_path is None:  # escolhido automaticamente: avisa no terminal (regra 6)
+                log.warning("usando a perplexidade de %s (passe --perplexidade para escolher outro arquivo)", ppl_arq)
             log.info("perplexidade de %s", ppl_arq)
             ppl = {k: v for k, v in ler_json(ppl_arq).get("perplexidade", {}).items()}
         df, _ = calcular_metricas(registros, gold, cfg, run_dir, bertscore_fn, ppl)

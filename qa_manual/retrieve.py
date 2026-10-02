@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import time
+from typing import TYPE_CHECKING
 
 from .index_bm25 import IndiceBM25
 from .index_dense import IndiceDenso
 from .io_utils import ErroUsuario
+
+if TYPE_CHECKING:
+    from .config import Config
 
 MODOS = ("nenhum", "bm25", "denso", "hibrido")
 
@@ -33,7 +37,7 @@ def rrf(listas: list[list[tuple[str, float]]], c: int, k: int) -> list[tuple[str
 
 
 def recuperar(
-    pergunta: str, modo: str, cfg, bm25: IndiceBM25 | None, denso: IndiceDenso | None
+    pergunta: str, modo: str, cfg: Config, bm25: IndiceBM25 | None, denso: IndiceDenso | None
 ) -> tuple[list[dict], dict]:
     """Recupera os trechos para a pergunta.
 

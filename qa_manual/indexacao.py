@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from . import index_bm25, index_dense
 from .chunking import Trecho, agrupar_trechos, estatisticas
@@ -21,18 +22,21 @@ from .io_utils import (
 )
 from .ollama_client import OllamaClient
 
+if TYPE_CHECKING:
+    from .config import Config
+
 log = logging.getLogger(__name__)
 
 VERSAO_MANIFESTO = 2
 MIN_TEMAS = 3
 
 
-def caminho_stats(cfg) -> Path:
+def caminho_stats(cfg: Config) -> Path:
     """``data/trechos_stats.json`` (ao lado de ``paths.trechos``)."""
     return Path(cfg.paths.trechos).with_name("trechos_stats.json")
 
 
-def caminho_manifesto(cfg) -> Path:
+def caminho_manifesto(cfg: Config) -> Path:
     """``index/manifest.json``."""
     return Path(cfg.paths.index_dir) / "manifest.json"
 
@@ -52,7 +56,7 @@ def carregar_trechos(caminho: str | Path) -> list[Trecho]:
         raise ErroUsuario(f"{caminho}: registro sem o campo {e}; rode `indexar` de novo.") from None
 
 
-def escrever_manifesto(cfg, pdf: Path, trechos: list[Trecho], n_paginas: int) -> dict:
+def escrever_manifesto(cfg: Config, pdf: Path, trechos: list[Trecho], n_paginas: int) -> dict:
     """Grava ``index/manifest.json`` (contrato 5.2)."""
     manifesto = {
         "versao_manifesto": VERSAO_MANIFESTO,
@@ -90,7 +94,7 @@ def _avisar_gold_invalido(cfg) -> None:
             )
 
 
-def indexar(pdf: Path, cfg, client: OllamaClient, reservar_ppl: int | None = None) -> dict:
+def indexar(pdf: Path, cfg: Config, client: OllamaClient, reservar_ppl: int | None = None) -> dict:
     """Passos 1 a 4: PDF -> parágrafos -> ``trechos.jsonl`` -> índices BM25 e denso -> manifesto.
 
     Args:
@@ -138,7 +142,7 @@ def indexar(pdf: Path, cfg, client: OllamaClient, reservar_ppl: int | None = Non
     return stats
 
 
-def verificar_manifesto(cfg) -> dict:
+def verificar_manifesto(cfg: Config) -> dict:
     """Recusa índices ausentes ou desatualizados em relação ao PDF, aos trechos e à configuração.
 
     Raises:
@@ -181,7 +185,7 @@ class Indices:
         self.por_id = {t.id: t for t in self.trechos}
 
 
-def carregar_indices(cfg, client: OllamaClient, denso: bool = True) -> Indices:
+def carregar_indices(cfg: Config, client: OllamaClient, denso: bool = True) -> Indices:
     """Verifica o manifesto e carrega trechos, BM25 e (opcionalmente) o índice denso."""
     manifesto = verificar_manifesto(cfg)
     trechos = carregar_trechos(cfg.paths.trechos)

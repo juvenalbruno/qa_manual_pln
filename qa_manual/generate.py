@@ -5,10 +5,14 @@ from __future__ import annotations
 import logging
 import re
 import time
+from typing import TYPE_CHECKING
 
 from . import prompts
 from .chunking import Trecho
 from .ollama_client import OllamaClient
+
+if TYPE_CHECKING:
+    from .config import Config
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +48,7 @@ def remover_think(texto: str) -> tuple[str, bool]:
     return texto, True
 
 
-def responder(pergunta: str, trechos: list[Trecho], leitor: str, cfg, client: OllamaClient) -> tuple[str, dict]:
+def responder(pergunta: str, trechos: list[Trecho], leitor: str, cfg: Config, client: OllamaClient) -> tuple[str, dict]:
     """Gera a resposta do leitor.
 
     Args:

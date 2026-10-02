@@ -28,6 +28,7 @@ def _limitar_tokenizador() -> None:
 
 
 def main() -> None:
+    """Calcula o BERTScore dos pares recebidos pela entrada padrão."""
     dados = json.load(sys.stdin)
     _limitar_tokenizador()
     from bert_score import score

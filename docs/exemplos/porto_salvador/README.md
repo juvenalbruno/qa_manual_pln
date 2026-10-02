@@ -43,19 +43,19 @@ Da raiz do repositório, com o ambiente ativado (`pip install -e .`), o Ollama r
 
 ```bash
 qa-manual smoke --sem-bertscore
-qa-manual indexar --manual inputs_teste/manual_porto_salvador.pdf --permitir-pasta-sincronizada
+qa-manual indexar --manual docs/exemplos/porto_salvador/manual_porto_salvador.pdf --permitir-pasta-sincronizada
 qa-manual stats
 qa-manual recuperar --pergunta "Qual o limite de vento para manobras de atracação em Salvador?" --modo bm25
 qa-manual recuperar --pergunta "Como devo agendar a entrada de um caminhão no TECON?" --modo hibrido
 qa-manual perguntar --config-exp S3 --leitor base --pergunta "Qual a profundidade do Berço 202?"
-qa-manual perguntar --config-exp S3 --leitor base --arquivo inputs_teste/perguntas.txt
+qa-manual perguntar --config-exp S3 --leitor base --arquivo docs/exemplos/porto_salvador/perguntas.txt
 
 # experimento mínimo (rápido) e avaliação completa no gold de teste
-qa-manual avaliar --gold inputs_teste/gold_test.jsonl --configs S0 S3 --leitores base --limite 30
-qa-manual avaliar --gold inputs_teste/gold_test.jsonl --configs S0 S1 S2 S3 --leitores base
+qa-manual avaliar --gold docs/exemplos/porto_salvador/gold_test.jsonl --configs S0 S3 --leitores base --limite 30
+qa-manual avaliar --gold docs/exemplos/porto_salvador/gold_test.jsonl --configs S0 S1 S2 S3 --leitores base
 
 # ajuste de parâmetros (k, limiar de abstenção, prompt) só no dev
-qa-manual avaliar --gold inputs_teste/gold_dev.jsonl --configs S0 S1 S2 S3 --leitores base
+qa-manual avaliar --gold docs/exemplos/porto_salvador/gold_dev.jsonl --configs S0 S1 S2 S3 --leitores base
 ```
 
 **Sobre `--permitir-pasta-sincronizada`.** O `indexar` recusa gravar quando o manual, `data/`, `index/` ou
@@ -78,12 +78,12 @@ Notas:
 Todos devem sair com código 2 e uma mensagem que diz o que fazer (`echo $?` mostra o código):
 
 ```bash
-qa-manual indexar --manual inputs_teste/casos_de_erro/manual_digitalizado.pdf --permitir-pasta-sincronizada
-qa-manual indexar --manual inputs_teste/casos_de_erro/manual_extensao_errada.txt
-qa-manual avaliar --gold inputs_teste/casos_de_erro/gold_campo_ausente.jsonl --configs S0 --leitores base
-qa-manual avaliar --gold inputs_teste/casos_de_erro/gold_tipo_invalido.jsonl --configs S0 --leitores base
-qa-manual avaliar --gold inputs_teste/casos_de_erro/gold_json_quebrado.jsonl --configs S0 --leitores base
-qa-manual avaliar --gold inputs_teste/casos_de_erro/gold_vazio.jsonl --configs S0 --leitores base
+qa-manual indexar --manual docs/exemplos/porto_salvador/casos_de_erro/manual_digitalizado.pdf --permitir-pasta-sincronizada
+qa-manual indexar --manual docs/exemplos/porto_salvador/casos_de_erro/manual_extensao_errada.txt
+qa-manual avaliar --gold docs/exemplos/porto_salvador/casos_de_erro/gold_campo_ausente.jsonl --configs S0 --leitores base
+qa-manual avaliar --gold docs/exemplos/porto_salvador/casos_de_erro/gold_tipo_invalido.jsonl --configs S0 --leitores base
+qa-manual avaliar --gold docs/exemplos/porto_salvador/casos_de_erro/gold_json_quebrado.jsonl --configs S0 --leitores base
+qa-manual avaliar --gold docs/exemplos/porto_salvador/casos_de_erro/gold_vazio.jsonl --configs S0 --leitores base
 ```
 
 | Caso | Mensagem esperada |
@@ -113,6 +113,6 @@ navio de 340 m deve terminar em abstenção.
 2. Cada pergunta respondível precisa de uma `ancora`: um trecho literal do **texto extraído** (sem diferenciar
    maiúsculas e espaços) que identifica o trecho-evidência. Linhas de tabela usam espaços entre as células, não
    `|`. Cada pergunta `sem_resposta` precisa de um `tema_id` entre aspas (`"5.1"`) que exista no manual.
-3. Rode `.venv/bin/python inputs_teste/gerar_inputs.py`. O script falha e lista as âncoras não encontradas (ou
+3. Rode `.venv/bin/python docs/exemplos/porto_salvador/gerar_inputs.py`. O script falha e lista as âncoras não encontradas (ou
    encontradas em temas diferentes) e os `tema_id` inválidos.
 4. Rode `.venv/bin/pytest tests/test_inputs_teste.py` para conferir o gold contra os trechos atuais.

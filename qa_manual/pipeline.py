@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
+from typing import TYPE_CHECKING
 
 from .generate import responder
 from .indexacao import Indices
@@ -11,12 +12,15 @@ from .ollama_client import OllamaClient
 from .retrieve import recuperar
 from .verify import detectar_abstencao, extrair_citacoes, validar_fonte
 
+if TYPE_CHECKING:
+    from .config import Config
+
 log = logging.getLogger(__name__)
 
 
 def perguntar(
     pergunta: str,
-    cfg,
+    cfg: Config,
     leitor: str,
     indices: Indices | None,
     client: OllamaClient,

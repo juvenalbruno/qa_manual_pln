@@ -5,8 +5,12 @@ from __future__ import annotations
 import statistics
 from collections import Counter
 from dataclasses import asdict, dataclass
+from typing import TYPE_CHECKING
 
 from .ingest import Paragrafo
+
+if TYPE_CHECKING:
+    from .config import Config
 
 N_FAIXAS_HISTOGRAMA = 10
 
@@ -87,7 +91,7 @@ def _agrupar_segmento(seg: list[Paragrafo], max_tokens: int, min_tokens: int, tp
     return fundidos
 
 
-def agrupar_trechos(paragrafos: list[Paragrafo], cfg) -> list[Trecho]:
+def agrupar_trechos(paragrafos: list[Paragrafo], cfg: Config) -> list[Trecho]:
     """Agrupa parágrafos em trechos.
 
     Regras:
@@ -132,7 +136,7 @@ def agrupar_trechos(paragrafos: list[Paragrafo], cfg) -> list[Trecho]:
     return trechos
 
 
-def estatisticas(trechos: list[Trecho], cfg, info: dict | None = None) -> dict:
+def estatisticas(trechos: list[Trecho], cfg: Config, info: dict | None = None) -> dict:
     """Estatísticas de ``data/trechos_stats.json``.
 
     Contém número de trechos, média/mediana/máximo de tokens, número de temas, trechos por tema (chave =
