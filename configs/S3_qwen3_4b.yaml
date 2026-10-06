@@ -1,4 +1,0 @@
-# S3 com qwen3:4b: mais rápido em CPU, para iterar no desenvolvimento (o 8B fica para o teste final).
-nome: S3_qwen3_4b
-modo: hibrido
-leitor: qwen3:4b

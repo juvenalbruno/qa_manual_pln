@@ -1,85 +1,120 @@
-"""Os arquivos de inputs_teste/ devem ser consistentes com o índice gerado pelo comando indexar."""
+"""Consistência do exemplo público (``docs/exemplos/porto_salvador/``) com a ingestão e os trechos, sem Ollama.
 
-import shutil
-from pathlib import Path
+Se algum teste falhar depois de mudar ``configs/base.yaml``, ``qa_manual.ingest`` ou ``qa_manual.chunking``, rode
+``docs/exemplos/porto_salvador/gerar_inputs.py`` para refazer o gold.
+"""
+
+from __future__ import annotations
 
 import pytest
 
-from src.cli import main
-from src.utils import ler_json, ler_jsonl
+from qa_manual import chunking, cli, gold, indexacao, ingest
+from qa_manual.io_utils import RAIZ, ler_jsonl
+from qa_manual.ollama_client import OllamaFake
+from qa_manual.retrieve import recuperar
 
-INPUTS = Path(__file__).resolve().parent.parent / "inputs_teste"
-pytestmark = pytest.mark.skipif(not (INPUTS / "manual_porto_salvador.pdf").exists(),
-                                reason="rode inputs_teste/gerar_inputs.py antes")
+DIR = RAIZ / "docs" / "exemplos" / "porto_salvador"
+PDF = DIR / "manual_porto_salvador.pdf"
+ERROS = DIR / "casos_de_erro"
+ARQUIVOS_GOLD = {"dev": DIR / "gold_dev.jsonl", "test": DIR / "gold_test.jsonl"}
+CAMPOS = ("id", "pergunta", "resposta_ref", "evidencia", "tipo", "tema_id", "origem", "revisado", "split")
+MIN_ITENS = 100
+MIN_RECALL_BM25 = 0.8
+
+pytestmark = pytest.mark.skipif(not PDF.is_file(), reason=f"rode {DIR}/gerar_inputs.py para gerar o PDF")
+
+
+@pytest.fixture(scope="module")
+def gold_por_split() -> dict[str, list[dict]]:
+    return {split: ler_jsonl(caminho) for split, caminho in ARQUIVOS_GOLD.items()}
 
 
 @pytest.fixture
-def inputs(tmp_path, monkeypatch, fake_ollama):
-    monkeypatch.chdir(tmp_path)
-    monkeypatch.setenv("OLLAMA_HOST", fake_ollama.url)
-    destino = tmp_path / "inputs_teste"
-    shutil.copytree(INPUTS, destino, ignore=shutil.ignore_patterns("fonte", "*.py"))
-    return destino
+def trechos(cfg) -> list[chunking.Trecho]:
+    return chunking.agrupar_trechos(ingest.construir_paragrafos(PDF, cfg), cfg)
 
 
-def test_evidencias_correspondem_ao_indice(inputs, capsys):
-    assert main(["indexar", "--manual", "inputs_teste/manual_porto_salvador.pdf"]) == 0
-    passagens = {p["id"]: p for p in ler_jsonl("index/passages.jsonl")}
-    gold = ler_jsonl(inputs / "gold_dev.jsonl") + ler_jsonl(inputs / "gold_test.jsonl")
-    assert len(gold) >= 100
-    for g in gold:
-        assert all(e in passagens for e in g["evidencia"]), g["id"]
-        assert (g["tipo"] == "sem_resposta") == (not g["evidencia"])
-    secoes = lambda split: {passagens[e]["secao"] for g in gold if g["split"] == split for e in g["evidencia"]}  # noqa: E731
-    assert not secoes("dev") & secoes("test")
-    assert ler_json("index/stats.json")["acima_do_limite"] == 0
-
-    capsys.readouterr()
-    assert main(["testar-indice", "--consultas", "inputs_teste/consultas_teste.jsonl"]) == 0
-    assert "bm25: 5/5" in capsys.readouterr().out
-
-    assert main(["avaliar", "--gold", "inputs_teste/gold_dev.jsonl", "--configs", "S1", "--sem-juiz"]) == 0
-    run = sorted(Path("runs").glob("*_avaliar"))[-1]
-    assert ler_json(run / "metrics.json")["S1"]["recall@5"] >= 0.8
-    assert main(["perguntar", "--config", "S3", "--arquivo", "inputs_teste/perguntas.txt"]) == 0
+def _todos(gold_por_split: dict[str, list[dict]]) -> list[dict]:
+    return [it for itens in gold_por_split.values() for it in itens]
 
 
-def test_executar_pipeline_completo(inputs, capsys):
-    args = ["executar",
-            "--manual", "inputs_teste/manual_porto_salvador.pdf",
-            "--gold", "inputs_teste/gold_test.jsonl",
-            "--gold-dev", "inputs_teste/gold_dev.jsonl",
-            "--consultas", "inputs_teste/consultas_teste.jsonl",
-            "--perguntas", "inputs_teste/perguntas.txt",
-            "--repeticoes", "2", "--varrer", "--tamanhos", "300", "400", "--ks", "3", "5"]
-    assert main(args) == 0
-    run = sorted(Path("runs").glob("*_avaliar"))[-1]
-    for arq in ("metrics.json", "analise.md", "recall_k.png", "comparacoes.json", "erros_amostra.jsonl"):
-        assert (run / arq).exists(), arq
-    assert set(ler_json(run / "metrics.json")) >= {"S0", "S1", "S2", "S3"}
-    assert sorted(Path("runs").glob("*_varredura"))
-    assert sorted(Path("runs").glob("*_perguntar_S3"))
-    assert "Resumo" in capsys.readouterr().out
-    # segunda execução reaproveita o índice
-    assert main(args[:5] + ["--configs", "S1", "--sem-juiz"]) == 0
-    assert "já está atualizado" in capsys.readouterr().out
+def test_campos_do_contrato(gold_por_split):
+    for split, itens in gold_por_split.items():
+        for it in itens:
+            assert all(c in it for c in CAMPOS), it["id"]
+            assert it["split"] == split
+            assert it["tipo"] in gold.TIPOS
+            assert it["origem"] == "manual" and it["revisado"] is True
+            assert isinstance(it["tema_id"], str) and it["tema_id"]
+    ids = [it["id"] for it in _todos(gold_por_split)]
+    assert len(ids) == len(set(ids))
 
 
-def test_executar_valida_arquivos_antes_de_comecar(inputs):
-    assert main(["executar", "--manual", "inputs_teste/manual_porto_salvador.pdf",
-                 "--gold", "inputs_teste/nao_existe.jsonl"]) == 2
-    assert main(["executar", "--manual", "inputs_teste/manual_porto_salvador.pdf",
-                 "--gold", "inputs_teste/gold_test.jsonl", "--varrer"]) == 2  # varrer sem --gold-dev
-    assert not Path("index").exists()
+def test_validar_gold_aceita_os_dois_arquivos(gold_por_split):
+    for split, itens in gold_por_split.items():
+        gold.validar_gold(itens, ARQUIVOS_GOLD[split])
 
 
-@pytest.mark.parametrize("args", [
-    ["indexar", "--manual", "inputs_teste/casos_de_erro/manual_digitalizado.pdf"],
-    ["indexar", "--manual", "inputs_teste/casos_de_erro/manual_extensao_errada.txt"],
-    ["avaliar", "--gold", "inputs_teste/casos_de_erro/gold_campo_ausente.jsonl", "--configs", "S0"],
-    ["avaliar", "--gold", "inputs_teste/casos_de_erro/gold_tipo_invalido.jsonl", "--configs", "S0"],
-    ["avaliar", "--gold", "inputs_teste/casos_de_erro/gold_json_quebrado.jsonl", "--configs", "S0"],
-    ["avaliar", "--gold", "inputs_teste/casos_de_erro/gold_vazio.jsonl", "--configs", "S0"],
-])
-def test_casos_de_erro(inputs, args):
-    assert main(args) == 2
+def test_pelo_menos_100_itens(gold_por_split):
+    assert len(_todos(gold_por_split)) >= MIN_ITENS
+
+
+def test_sem_resposta_se_e_somente_se_sem_evidencia(cfg, gold_por_split):
+    for it in _todos(gold_por_split):
+        assert (it["tipo"] == "sem_resposta") == (it["evidencia"] == []), it["id"]
+        if it["tipo"] == "sem_resposta":
+            assert it["resposta_ref"] == cfg.abstencao.frase
+
+
+def test_nenhum_tema_em_comum_entre_dev_e_test(gold_por_split):
+    temas_dev = {it["tema_id"] for it in gold_por_split["dev"]}
+    temas_test = {it["tema_id"] for it in gold_por_split["test"]}
+    assert temas_dev and temas_test
+    assert not temas_dev & temas_test
+
+
+def test_evidencias_existem_nos_trechos(trechos, gold_por_split):
+    por_id = {t.id: t for t in trechos}
+    temas = {t.tema_id for t in trechos}
+    for it in _todos(gold_por_split):
+        assert it["tema_id"] in temas, it["id"]
+        for tid in it["evidencia"]:
+            assert tid in por_id, f"{it['id']}: {tid} não existe nos trechos"
+            assert por_id[tid].tema_id == it["tema_id"], it["id"]
+
+
+def test_bm25_acha_a_evidencia_no_dev(cfg, gold_por_split):
+    client = OllamaFake()
+    indexacao.indexar(PDF, cfg, client)
+    indices = indexacao.carregar_indices(cfg, client, denso=False)
+    cfg_k5 = cfg.com(k=5)
+    respondiveis = [it for it in gold_por_split["dev"] if it["evidencia"]]
+    acertos = 0
+    for it in respondiveis:
+        recuperadas, _ = recuperar(it["pergunta"], "bm25", cfg_k5, indices.bm25, None)
+        acertos += bool({r["id"] for r in recuperadas} & set(it["evidencia"]))
+    assert respondiveis
+    assert acertos / len(respondiveis) >= MIN_RECALL_BM25
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ["indexar", "--manual", str(ERROS / "manual_digitalizado.pdf"), "--permitir-pasta-sincronizada"],
+        ["indexar", "--manual", str(ERROS / "manual_extensao_errada.txt")],
+        *(
+            ["avaliar", "--gold", str(ERROS / nome), "--configs", "S0", "--leitores", "base"]
+            for nome in (
+                "gold_campo_ausente.jsonl",
+                "gold_tipo_invalido.jsonl",
+                "gold_json_quebrado.jsonl",
+                "gold_vazio.jsonl",
+            )
+        ),
+    ],
+    ids=["digitalizado", "extensao", "campo_ausente", "tipo_invalido", "json_quebrado", "vazio"],
+)
+def test_casos_de_erro_saem_com_codigo_2(cfg, monkeypatch, capsys, args):
+    monkeypatch.setattr(cli, "criar_cliente", lambda c: OllamaFake())
+    assert cli.main(args) == 2
+    assert "erro:" in capsys.readouterr().err

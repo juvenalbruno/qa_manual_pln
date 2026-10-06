@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qa-manual"
+version = "0.2.0"
+description = "QA em português sobre manual técnico com Retriever-Reader local (Ollama), IC0024 PGCOMP/UFBA"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pymupdf>=1.24",
+    "bm25s>=0.2.0",
+    "faiss-cpu>=1.8.0",
+    "numpy>=1.26",
+    "ollama>=0.5",
+    "nltk>=3.8",
+    "pandas>=2.2",
+    "matplotlib>=3.8",
+    "bert-score>=0.3.13",
+    "torch>=2.2",
+    "transformers>=4.40",
+    "pyyaml>=6.0",
+    "tqdm>=4.66",
+    "tabulate>=0.9",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-cov>=5.0", "ruff>=0.6"]
+
+[project.scripts]
+qa-manual = "qa_manual.cli:main"
+
+[tool.setuptools]
+packages = ["qa_manual"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E741"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["ignore:builtin type (SwigPy|swigvarlink):DeprecationWarning"]
+
+[tool.coverage.run]
+source = ["qa_manual"]
+omit = ["qa_manual/cli.py", "qa_manual/perplexity.py"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true

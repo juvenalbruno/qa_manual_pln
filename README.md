@@ -1,195 +1,173 @@
-# QA sobre manual técnico com LLM local (Ollama)
+# qa-manual
 
-Trabalho da disciplina IC0024 (PGCOMP/UFBA): question answering em domínio fechado, open-book e generativo.
-O sistema recebe um manual em PDF e uma pergunta em português, e devolve uma resposta curta com a seção e a
-página de origem. Quando a informação não está no documento, responde "Não encontrado no manual".
+Sistema de perguntas e respostas em português sobre um manual técnico do setor portuário. Usa Retriever-Reader com
+leitor generativo (RAG) e modelos abertos servidos localmente pelo Ollama. Trabalho da disciplina IC0024
+(PGCOMP/UFBA).
 
-Arquitetura retriever-reader: BM25 (`bm25s`) e busca densa (`bge-m3` + FAISS) combinados por Reciprocal Rank
-Fusion; o leitor é o `qwen3:8b` e o juiz automático é o `llama3.1:8b`, todos servidos pelo Ollama.
+O projeto roda em duas partes:
 
-## Declaração de isolamento dos dados
+- **Local (CPU):** indexação do manual, perguntas, geração do conjunto de avaliação e avaliação. O manual nunca
+  sai da máquina.
+- **Google Colab (GPU T4):** só o ajuste fino do leitor, feito com um documento **público**. O resultado é um
+  arquivo de modelo que volta para a máquina local.
 
-**Nenhum dado do manual sai da máquina.** Todo o processamento (extração, embeddings, geração, julgamento) roda
-localmente:
+> **Confidencialidade.** Não coloque o projeto em pasta sincronizada com a nuvem (Mesa ou Documentos com iCloud,
+> Dropbox, OneDrive, Google Drive): o manual e os índices seriam enviados para fora da máquina, e o `indexar` se
+> recusa a rodar nesse caso. Nunca envie o manual, nem nada de `data/`, `index/` ou `runs/`, para o Colab.
 
-- O cliente do Ollama ([src/ollama_client.py](src/ollama_client.py)) **recusa URLs que não sejam locais**
-  (`localhost`, `127.0.0.1`, `::1`).
-- Não há chamadas a APIs externas. Depois de instalar as dependências e baixar os modelos, todos os comandos
-  funcionam com a rede desligada.
-- `data/`, `index/`, `runs/` e arquivos `*.pdf` estão no [.gitignore](.gitignore). O repositório contém apenas
-  código, prompts, configurações e estatísticas agregadas.
-- Os exemplos citados no relatório e nos slides são parafraseados.
+## Executar localmente
 
-## Instalação
+### O que precisa
 
-```bash
-# 1. Ollama (https://ollama.com/download) e modelos
-ollama pull qwen3:8b        # leitor
-ollama pull bge-m3          # embeddings
-ollama pull llama3.1:8b     # juiz e gerador de perguntas (distinto do leitor)
-
-# 2. Ambiente Python 3.11
-python3.11 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-# 3. Teste de fumaça (repita com a rede desligada para o critério de aceite da etapa 0)
-python smoke_test.py --gravar-readme
-```
-
-## Ambiente
-
-Preenchido por `python smoke_test.py --gravar-readme`:
-
-<!-- AMBIENTE:INICIO -->
-_(execute o teste de fumaça para registrar hardware, versões do Ollama, tags dos modelos e bibliotecas)_
-<!-- AMBIENTE:FIM -->
-
-## Inputs de teste
-
-[inputs_teste/](inputs_teste/) traz um manual público do Porto de Salvador em PDF, 152 perguntas de gold
-(dev e teste), consultas de teste, perguntas avulsas e casos de erro, para testar tudo sem o manual da empresa.
-Veja o roteiro em [inputs_teste/README.md](inputs_teste/README.md).
-
-## Execução com um único comando
-
-```bash
-python -m src.cli executar \
-  --manual     data/manual.pdf \
-  --gold       data/gold_test.jsonl \
-  --gold-dev   data/gold_dev.jsonl \
-  --consultas  data/consultas_teste.jsonl \
-  --perguntas  perguntas.txt \
-  --configs S0 S1 S2 S3 --repeticoes 3
-```
-
-O comando valida as entradas, confere o Ollama, indexa (ou reaproveita o índice), testa o índice, responde as
-perguntas avulsas, avalia e analisa. Com `--varrer`, ajusta tamanho de passagem e k no dev antes. Só `--manual` e
-`--gold` são obrigatórios. Veja `python -m src.cli executar --help`.
-
-## Reprodução, etapa por etapa
-
-Todos os comandos rodam da raiz do repositório. **Argumentos de arquivo omitidos são pedidos interativamente**;
-nenhum caminho de dados está fixo no código. Arquivos inexistentes ou com extensão errada encerram o comando com
-código 2 e uma mensagem clara.
-
-```bash
-# Etapas 1 e 2: extrair, limpar, segmentar e indexar
-python -m src.cli indexar --manual data/manual.pdf
-python -m src.cli inspecionar --n 20                      # inspeção manual de 20 passagens
-python -m src.cli testar-indice --consultas data/consultas_teste.jsonl   # 5 consultas à mão (modelo em exemplos/)
-
-# Etapa 3: depuração da recuperação
-python -m src.cli recuperar --pergunta "Qual o prazo para liberação da carga?" --modo hibrido
-
-# Etapa 4: perguntas avulsas (sem argumentos entra em modo interativo)
-python -m src.cli perguntar --config S3
-python -m src.cli perguntar --config S3 --arquivo perguntas.txt
-
-# Etapa 5: conjunto de avaliação
-python -m src.cli gerar-perguntas --n 150
-python -m src.cli revisar --candidatas data/gold_candidatas.jsonl --anotador ana
-python -m src.cli revisar --candidatas data/gold_candidatas.jsonl --anotador beto --comum   # 30% em comum
-python -m src.cli concordancia --revisoes data/revisoes/ana.jsonl data/revisoes/beto.jsonl
-python -m src.cli dividir-gold --candidatas data/gold_candidatas.jsonl --revisoes data/revisoes/ana.jsonl data/revisoes/beto.jsonl
-
-# Etapa 6: avaliação
-python -m src.cli avaliar --gold data/gold_test.jsonl --configs S0 S3 --limite 30          # experimento mínimo
-python -m src.cli avaliar --gold data/gold_test.jsonl --configs S0 S1 S2 S3 --repeticoes 3
-python -m src.cli validar-juiz --run runs/<timestamp>_avaliar                              # 50 itens à mão
-
-# Etapa 7: ajuste no dev, análise no teste
-python -m src.cli varrer --gold data/gold_dev.jsonl --manual data/manual.pdf --tamanhos 300 400 500 --ks 3 5 8
-python -m src.cli analisar --run runs/<timestamp>_avaliar
-python -m src.cli classificar-erros --run runs/<timestamp>_avaliar
-python -m src.cli analisar --run runs/<timestamp>_avaliar     # de novo, com as categorias confirmadas
-```
-
-`avaliar` e `varrer` podem ser retomados após uma interrupção com `--retomar runs/<timestamp>_...`: os itens já
-executados não são repetidos. `avaliar` primeiro gera todas as respostas e depois roda o juiz, para não alternar
-dois modelos de 8B na memória.
-
-### O que cada comando grava
-
-| Comando | Saída |
+| Item | Detalhe |
 |---|---|
-| `indexar` | `index/passages.jsonl`, `stats.json`, `bm25/`, `dense.faiss`, `dense_ids.json`, `manifest.json` |
-| `perguntar` | `runs/<ts>_perguntar_<cfg>/respostas.jsonl` |
-| `gerar-perguntas` | `data/gold_candidatas.jsonl` |
-| `revisar` / `concordancia` | `data/revisoes/<anotador>.jsonl`, `data/revisoes/concordancia.json` |
-| `dividir-gold` | `data/gold_dev.jsonl`, `data/gold_test.jsonl` |
-| `avaliar` | `runs/<ts>_avaliar/respostas.jsonl`, `julgamentos.jsonl`, `metrics.json` + tabela no terminal |
-| `validar-juiz` | `runs/<ts>/juiz_manual.jsonl` e `_validacao_juiz` em `metrics.json` |
-| `varrer` | `index/t<tamanho>/`, `runs/<ts>_varredura/varredura.json` |
-| `analisar` | `runs/<ts>/analise.md`, `comparacoes.json`, `recall_k.csv`, `recall_k.png`, `erros_amostra.jsonl` |
-| `classificar-erros` | `runs/<ts>/erros_classificados.jsonl` |
+| Sistema | Testado em macOS (Apple Silicon). Linux deve funcionar; no Windows, use o WSL2 (não testado). |
+| Hardware | CPU com 8 a 16 GB de RAM; GPU não é necessária. Cerca de 10 GB livres em disco (modelos e ambiente). |
+| Python | 3.11 (`brew install python@3.11` no macOS; `sudo apt install python3.11 python3.11-venv` no Ubuntu). |
+| Ollama | [ollama.com/download](https://ollama.com/download) no macOS, ou `curl -fsSL https://ollama.com/install.sh \| sh` no Linux. |
+| Git | Para clonar o repositório. |
+| llama.cpp (opcional) | Só para medir a perplexidade (passo 14). Exige `cmake` e um compilador C++. |
 
-`perguntar` e `avaliar` conferem `index/manifest.json`: se o índice não existe, se o manual mudou (hash SHA-256)
-ou se o modelo de embeddings difere da configuração, pedem para rodar `indexar` antes.
+Modelos usados pelo Ollama: `qwen3:4b` (leitor), `bge-m3` (embeddings) e `llama3.2:3b` (gerador de perguntas). O
+leitor ajustado, `qwen3-manual:4b`, vem do Colab (seção seguinte).
 
-## Configurações
+### Instalação
 
-| Arquivo | Conteúdo |
+```bash
+git clone https://github.com/SEU-USUARIO/qa-manual.git ~/projetos/qa-manual   # pasta local, fora da nuvem
+cd ~/projetos/qa-manual
+
+python3.11 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt && pip install -e .
+python -c "import nltk; nltk.download('stopwords')"
+
+ollama serve                      # em outro terminal (no macOS, o aplicativo do Ollama já faz isso)
+ollama pull qwen3:4b && ollama pull bge-m3 && ollama pull llama3.2:3b
+
+qa-manual smoke                   # confere bibliotecas, Ollama, modelos e BERTScore
+```
+
+- Em Linux sem GPU, instale o PyTorch para CPU **antes** do `requirements.txt`:
+  `pip install torch --index-url https://download.pytorch.org/whl/cpu`.
+- A primeira execução do BERTScore baixa o BERTimbau (~430 MB) do Hugging Face. É download de modelo, não envio
+  de dados.
+- Em cada novo terminal, ative o ambiente com `source .venv/bin/activate`.
+
+Para a perplexidade (opcional), compile só o binário `llama-perplexity`:
+
+```bash
+git clone https://github.com/ggml-org/llama.cpp ~/llama.cpp && cd ~/llama.cpp
+cmake -B build -DGGML_CUDA=OFF && cmake --build build --target llama-perplexity -j
+# binário em ~/llama.cpp/build/bin/llama-perplexity
+```
+
+### Primeiro teste com o manual público
+
+Antes de usar o manual da empresa, rode tudo com o manual público de exemplo (Porto de Salvador), que já vem com
+151 perguntas revisadas:
+
+```bash
+qa-manual indexar --manual docs/exemplos/porto_salvador/manual_porto_salvador.pdf
+qa-manual stats
+qa-manual recuperar --pergunta "Qual a profundidade do Berço 202?" --modo hibrido
+qa-manual perguntar --config-exp S3 --leitor base --pergunta "Qual a profundidade do Berço 202?"
+qa-manual avaliar --gold docs/exemplos/porto_salvador/gold_dev.jsonl --configs S0 S3 --leitores base --limite 30
+```
+
+O `avaliar` mostra a tabela de métricas no terminal e grava tudo em `runs/<data>_avaliar/`. Ao passar para o
+manual da empresa, rode o `indexar` de novo: ele substitui os trechos e o índice do exemplo.
+
+### Experimento com o manual da empresa
+
+```bash
+mkdir -p data && cp /caminho/do/manual.pdf data/manual.pdf
+
+# 1. Indexação (passos 1 a 4)
+qa-manual indexar --manual data/manual.pdf
+qa-manual stats                                    # confira quantos temas (seções) foram detectados
+
+# 2. Conjunto de avaliação (passo 12)
+qa-manual gerar-perguntas --n 150                  # candidatas geradas pelo llama3.2:3b
+qa-manual exportar-revisao                         # gera data/gold_revisao.csv para revisão humana
+#    Preencha a coluna "decisao" (aceitar, editar ou descartar) seguindo docs/protocolo_anotacao.md
+qa-manual importar-revisao --csv data/gold_revisao.csv --dividir --reservar-ppl 30
+
+# 3. Leitor ajustado: rode o notebook no Colab (seção seguinte) e registre o modelo
+bash colab/criar_modelo_local.sh models/qwen3-manual-q4_k_m.gguf
+
+# 4. Perplexidade (opcional, passo 14)
+qa-manual perplexidade --binario ~/llama.cpp/build/bin/llama-perplexity \
+    --gguf-base ollama --gguf-ajustado models/qwen3-manual-q4_k_m.gguf
+
+# 5. Avaliação (passos 13 e 15)
+qa-manual avaliar --gold data/gold_dev.jsonl --configs S3 --leitores base               # ajustes no dev
+qa-manual avaliar --gold data/gold_test.jsonl --configs S0 S1 S2 S3 --leitores base ajustado
+```
+
+Resultados em `runs/<data>_avaliar/`: `metrics.csv` (uma linha por configuração e leitor), `pareado.csv` (ganho
+do leitor ajustado), `respostas.jsonl` e dois gráficos PNG. Se a avaliação for interrompida, continue com
+`--retomar <run_id>` (o nome da pasta em `runs/`).
+
+Sem tempo para tudo, o **experimento mínimo** é: indexar, montar o gold e rodar
+`qa-manual avaliar --gold data/gold_test.jsonl --configs S0 S3 --leitores base --limite 30`.
+
+## Executar no Google Colab (ajuste fino)
+
+O notebook [colab/finetune_qlora.ipynb](colab/finetune_qlora.ipynb) faz os passos 5 a 7. Ele gera pares de
+treino a partir do documento público, ajusta o `Qwen3-4B` com QLoRA e exporta o leitor ajustado em GGUF.
+
+### O que precisa
+
+| Item | Detalhe |
 |---|---|
-| [configs/base.yaml](configs/base.yaml) | parâmetros comuns: modelos, `k`, RRF, temperatura 0, seed 42, `num_ctx` 8192, `num_predict` 200, `think: false` |
-| [configs/indexacao.yaml](configs/indexacao.yaml) | passagem de 400 tokens (~300 palavras), sobreposição de 50 tokens |
-| [configs/S0.yaml](configs/S0.yaml) | closed-book (sem passagens) |
-| [configs/S1.yaml](configs/S1.yaml) / [S2](configs/S2.yaml) / [S3](configs/S3.yaml) | BM25 / denso / híbrido RRF |
-| [configs/S3_gemma3_4b.yaml](configs/S3_gemma3_4b.yaml) | opcional: S3 com um leitor menor |
-| [configs/S3_qwen3_4b.yaml](configs/S3_qwen3_4b.yaml) | S3 com `qwen3:4b`, para iterar rápido no desenvolvimento |
+| Conta Google | Com acesso ao [Google Colab](https://colab.research.google.com); a GPU T4 gratuita basta, sujeita a disponibilidade. |
+| Documento público | O PDF de um regulamento portuário publicado por uma autoridade portuária. **Nunca o manual da empresa.** |
+| Código do projeto | O repositório no GitHub (o notebook o clona) ou um `.zip` só com os arquivos versionados. |
+| Tempo | Estimativa de 1 a 3 horas (ainda não medida). Geração dos pares e treino são as partes mais longas. |
+| Espaço local | Cerca de 3 GB para baixar o GGUF ajustado. |
 
-`OLLAMA_HOST` (a mesma variável do Ollama) sobrescreve a URL, que continua restrita a endereços locais.
+### Passo a passo
 
-## Métricas
+1. **Disponibilize o código.** Se o repositório estiver no GitHub, anote a URL e o branch. Se ele for privado,
+   gere um `.zip` só com os arquivos versionados, que nunca inclui `data/`:
+   `git archive --format=zip -o qa-manual.zip HEAD`. No Colab, envie o `.zip` pelo painel **Arquivos** e rode
+   `!unzip -q qa-manual.zip -d qa-manual` numa célula antes da instalação; a clonagem é pulada.
+2. **Abra o notebook.** No Colab: **Arquivo → Fazer upload de notebook** e escolha `colab/finetune_qlora.ipynb`
+   (ou abra direto pela aba GitHub).
+3. **Ative a GPU.** **Ambiente de execução → Alterar o tipo de ambiente de execução → GPU T4**.
+4. **Ajuste os parâmetros** na primeira célula de código: `REPO_URL` e `BRANCH` (o branch que tem este código).
+5. **Confirme o documento.** Na seção 3 do notebook, mude `DOCUMENTO_E_PUBLICO = False` para `True` só depois de
+   conferir que o PDF é público.
+6. **Execute.** **Ambiente de execução → Executar tudo**. Quando aparecer o botão de upload, escolha o PDF público.
+7. **Acompanhe** as saídas: o passo 5 informa quantos pares foram gerados e a taxa de JSON válido; o treino mostra
+   a perda a cada 10 passos; a checagem de sanidade marca `OK` ou `!!` em 10 respostas de validação.
+8. **Baixe os resultados.** A célula de download, na seção 7 do notebook, baixa `qwen3-manual-q4_k_m.gguf`,
+   `treino_log.csv` e `metricas_validacao.json`. O navegador pode pedir permissão para vários downloads.
 
-- **Recuperação:** Recall@k (acerto se alguma passagem-evidência está no top-k) e MRR.
-- **Resposta:** Exact Match e F1 de tokens após normalização (minúsculas, sem pontuação, sem artigos e preposições
-  frequentes). A citação "(seção X, p. N)" é removida antes da comparação. Itens `sem_resposta` valem 1 quando o
-  sistema se abstém. `em_respondiveis` e `f1_respondiveis` excluem esses itens.
-- **Juiz local:** nota 0/1/2 do `llama3.1:8b` e fidelidade 0/1 (a resposta é sustentada pelas passagens?).
-  Abstenções são pontuadas sem chamar o modelo.
-- **Abstenção:** correta (itens `sem_resposta`) e indevida (demais itens).
-- **Citação correta:** a página citada pertence à passagem-evidência.
-- **Eficiência:** latência mediana e p95. O modelo é pré-carregado antes da medição.
-- **Reprodutibilidade:** fração de perguntas com resposta idêntica entre repetições.
+Se a sessão do Colab cair, os arquivos dela se perdem: rode o notebook de novo desde o início.
+
+### De volta à máquina local
+
+```bash
+mkdir -p models && mv ~/Downloads/qwen3-manual-q4_k_m.gguf models/
+mv ~/Downloads/treino_log.csv ~/Downloads/metricas_validacao.json colab/    # para o relatório
+bash colab/criar_modelo_local.sh models/qwen3-manual-q4_k_m.gguf          # cria qwen3-manual:4b no Ollama
+qa-manual smoke                                                           # agora sem aviso sobre o leitor ajustado
+```
+
+O script gera o `Modelfile` a partir do `qwen3:4b`, trocando só o arquivo do modelo, e registra
+`qwen3-manual:4b` no Ollama. Depois disso, o leitor `ajustado` funciona em `perguntar` e `avaliar`.
 
 ## Testes
 
 ```bash
-pytest -q
+pytest --cov      # sem Ollama e sem o manual; usa um PDF sintético e um cliente Ollama falso
 ```
 
-Os testes não precisam do Ollama: [tests/fake_ollama.py](tests/fake_ollama.py) sobe um servidor local que imita
-`/api/chat` e `/api/embed`, e [scripts/gerar_manual_exemplo.py](scripts/gerar_manual_exemplo.py) gera um manual
-fictício com cabeçalhos, rodapés, tabela e hifenização. O teste ponta a ponta executa todos os comandos da CLI.
+## Documentação
 
-## Estrutura
-
-```
-configs/     S0-S3 e parâmetros de indexação
-prompts/     leitor, leitor sem contexto (S0), gerador de perguntas, juiz e juiz de fidelidade
-src/
-  cli.py            comandos e solicitação dos arquivos de entrada
-  ingest.py         extração (PyMuPDF), limpeza, títulos, tabelas, segmentação
-  index.py          índices BM25 e FAISS, manifesto
-  retrieve.py       BM25, denso, híbrido (RRF)
-  ollama_client.py  /api/chat e /api/embed (somente localhost)
-  generate.py       prompt do leitor, geração, extração da citação
-  evaluate.py       métricas, juiz, agregação, orquestração da avaliação
-  gold.py           geração de candidatas, revisão, concordância, divisão por seção
-  analysis.py       bootstrap, McNemar, Recall@k, análise de erros, varredura
-  utils.py          normalização, JSONL, configurações
-docs/        protocolo de anotação, modelos de relatório e slides
-exemplos/    formatos de consultas de teste e de arquivo de perguntas
-scripts/     gerador do manual fictício usado nos testes
-tests/       testes de unidade e ponta a ponta
-```
-
-## Limitações conhecidas
-
-- A detecção de títulos é heurística (numeração, caixa alta, tamanho de fonte). Manuais sem hierarquia visual
-  clara podem gerar seções erradas; verifique com `inspecionar`.
-- Tabelas complexas (células mescladas) podem ser mal extraídas pelo PyMuPDF. Se forem relevantes, troque por
-  Docling.
-- Em CPU, cada pergunta leva de 10 a 30 s com modelos de 8B. Com 8 GB de RAM, prefira `qwen3:4b` no
-  desenvolvimento (`--configs S3_qwen3_4b`) e rode o 8B só no teste final.
+- [docs/README.md](docs/README.md): referência completa (pipeline, todos os comandos e saídas, configuração,
+  formatos de arquivo, métricas, decisões de implementação e referências bibliográficas).
+- [docs/protocolo_anotacao.md](docs/protocolo_anotacao.md): como revisar as perguntas no CSV.
+- [docs/relatorio.md](docs/relatorio.md) e [docs/slides.md](docs/slides.md): modelos para a entrega.
+- [docs/exemplos/](docs/exemplos/): manual público de teste, gold, casos de erro e perguntas de exemplo.

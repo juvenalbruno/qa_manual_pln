@@ -1,3 +1,2 @@
 # S2: recuperação densa (bge-m3 + FAISS).
-nome: S2
-modo: denso
+retriever: denso
