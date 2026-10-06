@@ -61,48 +61,20 @@ Configurações experimentais: **S0** (sem recuperação), **S1** (BM25), **S2**
 uma roda com dois leitores: `base` (`qwen3:4b`) e `ajustado` (`qwen3-manual:4b`). Só o recuperador e o leitor
 mudam; prompt, `k` e decodificação (temperatura 0, seed 42) são idênticos.
 
-## Instalação local
+## Instalação e execução
 
-Requisitos: Python 3.11, 8 a 16 GB de RAM, sem GPU, [Ollama](https://ollama.com/download) instalado e rodando
-(`ollama serve`).
+O passo a passo para executar localmente e no Google Colab, com o que é preciso instalar, está no
+[README da raiz](../README.md). Notas de ambiente:
 
-```bash
-python3.11 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt && pip install -e .
-python -c "import nltk; nltk.download('stopwords')"
-ollama pull qwen3:4b && ollama pull bge-m3 && ollama pull llama3.2:3b
-qa-manual smoke
-```
-
-- `requirements.txt` fixa as versões usadas no desenvolvimento. Em Linux sem GPU, instale antes o torch para
-  CPU: `pip install torch --index-url https://download.pytorch.org/whl/cpu`.
+- `requirements.txt` fixa as versões usadas no desenvolvimento.
 - O BERTimbau (`neuralmind/bert-base-portuguese-cased`, ~430 MB) é baixado do Hugging Face na primeira execução
   do BERTScore. É download de modelo, não envio de dados.
 - No macOS, `faiss-cpu` e `torch` trazem cópias diferentes do OpenMP e não podem ser carregados no mesmo
   processo. Por isso o BERTScore roda num subprocesso ([qa_manual/bertscore_proc.py](../qa_manual/bertscore_proc.py)).
 
-### llama.cpp (só o binário de perplexidade)
-
-```bash
-git clone https://github.com/ggml-org/llama.cpp && cd llama.cpp
-cmake -B build -DGGML_CUDA=OFF && cmake --build build --target llama-perplexity -j
-# binário em build/bin/llama-perplexity
-```
-
 ## Ordem de execução do experimento
 
-```bash
-qa-manual indexar --manual data/manual.pdf
-qa-manual stats                                       # confira temas detectados e tamanhos dos trechos
-qa-manual gerar-perguntas --n 150                     # -> data/gold_candidatas.jsonl
-qa-manual exportar-revisao                            # -> data/gold_revisao.csv (revisão humana)
-qa-manual importar-revisao --csv data/gold_revisao.csv --dividir --reservar-ppl 30
-# (Colab) gerar o GGUF e criar qwen3-manual:4b localmente; veja "Ajuste fino no Colab"
-qa-manual perplexidade --binario ~/llama.cpp/build/bin/llama-perplexity \
-    --gguf-base ollama --gguf-ajustado models/qwen3-manual-q4_k_m.gguf
-qa-manual avaliar --gold data/gold_dev.jsonl --configs S3 --leitores base        # ajuste de k e max_tokens
-qa-manual avaliar --gold data/gold_test.jsonl --configs S0 S1 S2 S3 --leitores base ajustado
-```
+A sequência de comandos está no [README da raiz](../README.md#experimento-com-o-manual-da-empresa). Detalhes:
 
 **Experimento mínimo viável** (antes de qualquer refinamento): indexar, gerar e revisar o gold e rodar
 `qa-manual avaliar --gold data/gold_test.jsonl --configs S0 S3 --leitores base --limite 30`.
@@ -143,7 +115,7 @@ sem o tempo de carga, cada leitor é aquecido antes da medição.
 
 ## Ajuste fino no Colab
 
-[colab/finetune_qlora.ipynb](../colab/finetune_qlora.ipynb) executa os passos 5 a 7 numa GPU T4:
+O que o notebook [colab/finetune_qlora.ipynb](../colab/finetune_qlora.ipynb) faz, numa GPU T4:
 
 1. Instala Unsloth e Ollama, clona este repositório (ajuste `REPO_URL`) e roda os passos 1 a 3 sobre o documento
    público, com o mesmo código e os mesmos parâmetros do projeto.
@@ -160,15 +132,8 @@ sem o tempo de carga, cada leitor é aquecido antes da medição.
 5. **Passo 7:** `save_pretrained_gguf(..., quantization_method="q4_k_m")` e download de
    `qwen3-manual-q4_k_m.gguf`, `treino_log.csv` e `metricas_validacao.json`.
 
-Na máquina local:
-
-```bash
-mkdir -p models && mv ~/Downloads/qwen3-manual-q4_k_m.gguf models/
-mv ~/Downloads/treino_log.csv ~/Downloads/metricas_validacao.json colab/
-bash colab/criar_modelo_local.sh models/qwen3-manual-q4_k_m.gguf
-```
-
-O script gera o `Modelfile` a partir de `ollama show qwen3:4b --modelfile`, trocando só a linha `FROM` (TEMPLATE,
+Como executar o notebook e registrar o modelo localmente: [README da raiz](../README.md#executar-no-google-colab-ajuste-fino).
+O script `colab/criar_modelo_local.sh` gera o `Modelfile` a partir de `ollama show qwen3:4b --modelfile`, trocando só a linha `FROM` (TEMPLATE,
 PARAMETER e SYSTEM ficam iguais; veja [Modelfile.template](Modelfile.template)), roda
 `ollama create qwen3-manual:4b -f Modelfile` e testa com `ollama run`.
 
