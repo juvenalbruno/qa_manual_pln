@@ -168,6 +168,7 @@ pytest --cov      # sem Ollama e sem o manual; usa um PDF sintético e um client
 
 - [docs/README.md](docs/README.md): referência completa (pipeline, todos os comandos e saídas, configuração,
   formatos de arquivo, métricas, decisões de implementação e referências bibliográficas).
+- [docs/fluxograma.md](docs/fluxograma.md): fluxograma do processo, fase por fase, com a situação de cada etapa.
 - [docs/protocolo_anotacao.md](docs/protocolo_anotacao.md): como revisar as perguntas no CSV.
 - [docs/relatorio.md](docs/relatorio.md) e [docs/slides.md](docs/slides.md): modelos para a entrega.
 - [docs/exemplos/](docs/exemplos/): manual público de teste, gold, casos de erro e perguntas de exemplo.
