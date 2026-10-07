@@ -117,8 +117,9 @@ sem o tempo de carga, cada leitor é aquecido antes da medição.
 
 O que o notebook [colab/finetune_qlora.ipynb](../colab/finetune_qlora.ipynb) faz, numa GPU T4:
 
-1. Instala Unsloth e Ollama, clona este repositório (ajuste `REPO_URL`) e roda os passos 1 a 3 sobre o documento
-   público, com o mesmo código e os mesmos parâmetros do projeto.
+1. Instala Unsloth e Ollama, grava o código do projeto que vem embutido no notebook (gerado por
+   `colab/gerar_notebook.py`; nada é baixado do repositório) e roda os passos 1 a 3 sobre o documento público, com
+   o mesmo código e os mesmos parâmetros do projeto.
 2. **Passo 5:** o `llama3.2:3b` gera pergunta e resposta por trecho (até 1500). A resposta termina com a fonte do
    próprio trecho, preenchida pelo código; 20% dos exemplos têm como alvo `Não encontrado no manual.`. Cada
    exemplo usa o prompt do leitor ([prompts/leitor.txt](../prompts/leitor.txt)) com o trecho-evidência e 2 a 4
@@ -220,7 +221,7 @@ qa_manual/
   perplexity.py     passo 14           evaluate.py      passo 15
   bertscore_proc.py BERTScore em subprocesso
   cli.py            comandos
-colab/        notebook do ajuste fino e criar_modelo_local.sh
+colab/        notebook do ajuste fino (autossuficiente), gerar_notebook.py e criar_modelo_local.sh
 docs/         instruções e exemplos (fora do código que roda):
   README.md               este guia
   protocolo_anotacao.md   revisão humana do gold

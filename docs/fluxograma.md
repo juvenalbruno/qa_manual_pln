@@ -156,7 +156,7 @@ O documento público vira pares de treino no formato do leitor; o modelo ajustad
 flowchart TD
   PUB[/"Regulamento portuário público (PDF)"/] --> OK{"DOCUMENTO_E_PUBLICO<br/>confirmado no notebook?"}
   OK -->|não| STOP["Notebook para antes do upload"]
-  OK -->|sim| P13["Passos 1 a 3 com o mesmo código<br/>trechos do documento público"]
+  OK -->|sim| P13["Passos 1 a 3 com o código do projeto<br/>embutido no notebook, sem GitHub"]
   P13 --> P5["5 · llama3.2:3b gera pares<br/>até 1500; 20% com alvo de abstenção<br/>resposta termina com a fonte do trecho"]
   P5 --> CT["Prompt do leitor com o trecho certo<br/>e 2 a 4 distratores do BM25"]
   CT --> DS[("treino.jsonl 95%<br/>validacao.jsonl 5%")]

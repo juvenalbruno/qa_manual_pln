@@ -36,6 +36,7 @@ packages = ["qa_manual"]
 
 [tool.ruff]
 line-length = 120
+extend-exclude = ["colab/finetune_qlora.ipynb"]  # gerado por colab/gerar_notebook.py
 target-version = "py311"
 
 [tool.ruff.lint]

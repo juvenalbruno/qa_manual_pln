@@ -116,32 +116,31 @@ Sem tempo para tudo, o **experimento mínimo** é: indexar, montar o gold e roda
 O notebook [colab/finetune_qlora.ipynb](colab/finetune_qlora.ipynb) faz os passos 5 a 7. Ele gera pares de
 treino a partir do documento público, ajusta o `Qwen3-4B` com QLoRA e exporta o leitor ajustado em GGUF.
 
+O notebook é **autossuficiente**: o código do projeto que ele usa (módulos de `qa_manual`, `configs/base.yaml` e
+os prompts) vai embutido nele, e nada é baixado do repositório. Da internet o Colab baixa só pacotes Python, o
+Ollama e os modelos `llama3.2:3b` e `Qwen3-4B`.
+
 ### O que precisa
 
 | Item | Detalhe |
 |---|---|
 | Conta Google | Com acesso ao [Google Colab](https://colab.research.google.com); a GPU T4 gratuita basta, sujeita a disponibilidade. |
+| O notebook | O arquivo `colab/finetune_qlora.ipynb`; é o único arquivo do projeto que sobe para o Colab. |
 | Documento público | O PDF de um regulamento portuário publicado por uma autoridade portuária. **Nunca o manual da empresa.** |
-| Código do projeto | O repositório no GitHub (o notebook o clona) ou um `.zip` só com os arquivos versionados. |
 | Tempo | Estimativa de 1 a 3 horas (ainda não medida). Geração dos pares e treino são as partes mais longas. |
 | Espaço local | Cerca de 3 GB para baixar o GGUF ajustado. |
 
 ### Passo a passo
 
-1. **Disponibilize o código.** Se o repositório estiver no GitHub, anote a URL e o branch. Se ele for privado,
-   gere um `.zip` só com os arquivos versionados, que nunca inclui `data/`:
-   `git archive --format=zip -o qa-manual.zip HEAD`. No Colab, envie o `.zip` pelo painel **Arquivos** e rode
-   `!unzip -q qa-manual.zip -d qa-manual` numa célula antes da instalação; a clonagem é pulada.
-2. **Abra o notebook.** No Colab: **Arquivo → Fazer upload de notebook** e escolha `colab/finetune_qlora.ipynb`
-   (ou abra direto pela aba GitHub).
-3. **Ative a GPU.** **Ambiente de execução → Alterar o tipo de ambiente de execução → GPU T4**.
-4. **Ajuste os parâmetros** na primeira célula de código: `REPO_URL` e `BRANCH` (o branch que tem este código).
-5. **Confirme o documento.** Na seção 3 do notebook, mude `DOCUMENTO_E_PUBLICO = False` para `True` só depois de
+1. **Abra o notebook.** No Colab: **Arquivo → Fazer upload de notebook** e escolha `colab/finetune_qlora.ipynb`.
+2. **Ative a GPU.** **Ambiente de execução → Alterar o tipo de ambiente de execução → GPU T4**.
+3. **Confirme o documento.** Na seção 4 do notebook, mude `DOCUMENTO_E_PUBLICO = False` para `True` só depois de
    conferir que o PDF é público.
-6. **Execute.** **Ambiente de execução → Executar tudo**. Quando aparecer o botão de upload, escolha o PDF público.
-7. **Acompanhe** as saídas: o passo 5 informa quantos pares foram gerados e a taxa de JSON válido; o treino mostra
-   a perda a cada 10 passos; a checagem de sanidade marca `OK` ou `!!` em 10 respostas de validação.
-8. **Baixe os resultados.** A célula de download, na seção 7 do notebook, baixa `qwen3-manual-q4_k_m.gguf`,
+4. **Execute.** **Ambiente de execução → Executar tudo**. Quando aparecer o botão de upload, escolha o PDF público.
+5. **Acompanhe** as saídas: a seção 3 confirma de onde o código foi carregado; o passo 5 informa quantos pares
+   foram gerados e a taxa de JSON válido; o treino mostra a perda a cada 10 passos; a checagem de sanidade marca
+   `OK` ou `!!` em 10 respostas de validação.
+6. **Baixe os resultados.** A célula de download, na seção 8 do notebook, baixa `qwen3-manual-q4_k_m.gguf`,
    `treino_log.csv` e `metricas_validacao.json`. O navegador pode pedir permissão para vários downloads.
 
 Se a sessão do Colab cair, os arquivos dela se perdem: rode o notebook de novo desde o início.
@@ -157,6 +156,10 @@ qa-manual smoke                                                           # agor
 
 O script gera o `Modelfile` a partir do `qwen3:4b`, trocando só o arquivo do modelo, e registra
 `qwen3-manual:4b` no Ollama. Depois disso, o leitor `ajustado` funciona em `perguntar` e `avaliar`.
+
+Se você mudar algum módulo de `qa_manual` usado no Colab, os prompts ou o `base.yaml`, gere o notebook de novo
+com `python colab/gerar_notebook.py`. Um teste (`tests/test_notebook_colab.py`) falha enquanto o notebook estiver
+desatualizado.
 
 ## Testes
 
