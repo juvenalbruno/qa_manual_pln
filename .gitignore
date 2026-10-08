@@ -1,25 +1,14 @@
-# Dados da empresa e artefatos derivados: nunca versionar
-data/
-index/
-runs/
-models/
-*.gguf
+# Dados do manual (confidenciais): nunca versionar
+manual.pdf
 *.pdf
-Modelfile
+perguntas.json
+resposta.json
+indice/
+resultados/
 
 # Ambiente
 .venv
 .venv/
 *.nosync/
 __pycache__/
-*.pyc
-*.egg-info/
-.pytest_cache/
-.ruff_cache/
-.coverage
-htmlcov/
 .DS_Store
-
-# PDFs de teste gerados a partir de fontes públicas (não são dados da empresa)
-!docs/exemplos/porto_salvador/*.pdf
-!docs/exemplos/porto_salvador/casos_de_erro/*.pdf

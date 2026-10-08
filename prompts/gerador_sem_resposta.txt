@@ -1,6 +1,0 @@
-A seguir está um trecho de um manual técnico do setor portuário.
-Escreva UMA pergunta em português, plausível para quem consulta esse manual, sobre um detalhe
-que NÃO aparece no trecho (por exemplo, um prazo, responsável, valor ou documento que o trecho não menciona).
-Responda somente com JSON válido no formato {{"pergunta": "..."}}.
-
-Trecho: {texto}

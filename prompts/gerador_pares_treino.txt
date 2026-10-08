@@ -1,8 +1,0 @@
-A seguir está um trecho de um documento do setor portuário.
-Escreva UMA pergunta em português que possa ser respondida apenas com esse trecho,
-do tipo "{tipo}" (factual = fato pontual, prazo, nome, quantidade; procedimental = como fazer algo, em passos).
-Dê também a resposta correta em uma ou duas frases, copiando ou parafraseando o trecho,
-terminando com a fonte exatamente no formato (seção {tema_id}, p. {pagina}).
-Responda somente com JSON válido no formato {{"pergunta": "...", "resposta": "..."}}.
-
-Trecho (seção {tema_id}, p. {pagina}): {texto}
