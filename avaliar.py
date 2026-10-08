@@ -17,11 +17,14 @@ combinação calcula:
     latencia_mediana_s tempo mediano por pergunta.
     perplexidade  o quanto o modelo leitor "se surpreende" com o texto do manual (quanto menor, mais familiar);
                   calculada pelo llama-perplexity do llama.cpp, uma vez por modelo (igual para todos os modos).
+                  O qwen3-manual foi treinado com o manual inteiro, então para ele a perplexidade mostra o quanto
+                  absorveu o texto (não a capacidade de generalizar para textos novos).
 
 Uso:
-    python avaliar.py                                  # resposta.json, S0 a S3, leitor qwen3:4b
+    python avaliar.py                                  # resposta.json, S0 a S3, leitor original (e qwen3-manual,
+                                                       # se o treinar.py já tiver criado)
     python avaliar.py --modos S0 S3 --limite 30        # experimento mínimo
-    python avaliar.py --modelos qwen3:4b outro:modelo  # compara leitores
+    python avaliar.py --modelos modelo1 modelo2        # escolhe os leitores
     python avaliar.py --sem-bertscore                  # pula o BERTScore (mais rápido)
     python avaliar.py --sem-perplexidade               # pula a perplexidade
     python avaliar.py --llama-perplexity /caminho/llama-perplexity   # se o llama.cpp não estiver em ~/llama.cpp
@@ -279,11 +282,11 @@ LLAMA_PERPLEXITY = Path("~/llama.cpp/build/bin/llama-perplexity").expanduser()
 N_TRECHOS_PPL = 30
 SEMENTE_PPL = 42
 # Janela de contexto do cálculo. O texto precisa ter pelo menos o dobro disso em tokens.
-CONTEXTO_PPL = 2048
+CONTEXTO_PPL = 1024
 
 
 def montar_texto_ppl(indice: qa.Indice, destino: Path) -> Path:
-    """Sorteia trechos do manual e grava o texto usado na perplexidade.
+    """Sorteia trechos do manual e grava o texto usado na perplexidade (o mesmo para todos os modelos).
 
     Entradas:
         indice: índice do manual.
@@ -291,7 +294,7 @@ def montar_texto_ppl(indice: qa.Indice, destino: Path) -> Path:
     Saídas:
         o caminho do arquivo gravado (trechos separados por linha em branco).
     """
-    # Sorteio com semente fixa e em ordem de id, para o texto ser sempre o mesmo.
+    # Sorteio com semente fixa, para o texto ser sempre o mesmo.
     escolhidos = random.Random(SEMENTE_PPL).sample(indice.trechos, min(N_TRECHOS_PPL, len(indice.trechos)))
     escolhidos.sort(key=lambda t: t["id"])
     destino.write_text("\n\n".join(t["texto"] for t in escolhidos) + "\n", encoding="utf-8")
@@ -302,7 +305,7 @@ def gguf_do_ollama(modelo: str) -> Path:
     """Acha o arquivo GGUF que o Ollama usa para um modelo.
 
     Entradas:
-        modelo: nome no Ollama (ex.: qwen3:4b).
+        modelo: nome no Ollama.
     Saídas:
         caminho do arquivo (o "blob" do Ollama é um GGUF válido para o llama.cpp).
     Erros:
@@ -310,6 +313,8 @@ def gguf_do_ollama(modelo: str) -> Path:
     """
     if shutil.which("ollama") is None:
         raise qa.ErroUsuario("comando ollama não encontrado; informe o arquivo com --gguf modelo=arquivo.gguf")
+    # O "ollama show" precisa do servidor ligado.
+    qa.ligar_ollama()
     # O Modelfile mostrado pelo Ollama tem uma linha "FROM /caminho/do/blob".
     comando = ["ollama", "show", modelo, "--modelfile"]
     saida = subprocess.run(comando, capture_output=True, text=True, check=False)
@@ -509,6 +514,23 @@ def imprimir_tabela(linhas: list[dict]) -> None:
         print("  ".join(str(linha[c]).ljust(w) for c, w in zip(colunas, larguras, strict=True)))
 
 
+def modelo_instalado(modelo: str) -> bool:
+    """Diz se um modelo já existe no Ollama local (liga o Ollama, se preciso).
+
+    Entradas:
+        modelo: nome no Ollama.
+    Saídas:
+        True se o modelo está instalado.
+    """
+    import ollama
+
+    try:
+        qa.criar_cliente().show(modelo)
+        return True
+    except ollama.ResponseError:
+        return False
+
+
 def main(argv: list[str] | None = None) -> int:
     """Lê os argumentos, roda a avaliação e grava os resultados.
 
@@ -524,7 +546,11 @@ def main(argv: list[str] | None = None) -> int:
         default=list(qa.MODOS),
         help="padrão: S0 S1 S2 S3",
     )
-    parser.add_argument("--modelos", nargs="+", default=[qa.MODELO_LEITOR], help="leitores a comparar")
+    parser.add_argument(
+        "--modelos",
+        nargs="+",
+        help=f"leitores a comparar (padrão: {qa.MODELO_LEITOR} e, se existir, {qa.MODELO_TREINADO})",
+    )
     parser.add_argument("--limite", type=int, help="usa só as N primeiras perguntas aprovadas")
     parser.add_argument(
         "--sem-bertscore",
@@ -545,6 +571,9 @@ def main(argv: list[str] | None = None) -> int:
         help="GGUF de um modelo, se não vier do Ollama",
     )
     args = parser.parse_args(argv)
+    # Confere o --gguf antes de começar (um erro aqui no fim jogaria fora horas de avaliação).
+    if any("=" not in item for item in args.gguf):
+        parser.error("use --gguf modelo=arquivo.gguf")
     try:
         indice = qa.carregar_indice()
         gabarito = carregar_gabarito(Path(args.respostas), indice)[: args.limite]
@@ -554,6 +583,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Avaliando {len(gabarito)} perguntas aprovadas ...", file=sys.stderr)
         # Carrega o BERTScore antes de começar (o download do BERTimbau acontece só na primeira vez).
         avaliador = None if args.sem_bertscore else criar_bertscore()
+        # Sem --modelos: o leitor original e, se o treinar.py já o criou, o leitor ajustado.
+        if args.modelos is None:
+            args.modelos = [qa.MODELO_LEITOR] + ([qa.MODELO_TREINADO] if modelo_instalado(qa.MODELO_TREINADO) else [])
+        print(f"Leitores: {', '.join(args.modelos)}", file=sys.stderr)
         linhas = avaliar(gabarito, indice, args.modos, args.modelos, pasta, avaliador)
         # Perplexidade: uma por modelo, repetida em todas as linhas (modos) desse modelo.
         if not args.sem_perplexidade:

@@ -10,7 +10,7 @@ Fluxo (Retriever-Reader):
     2. Trechos .................. parágrafos agrupados por seção, até ~400 tokens, com seção e página.
     3. Índices ................. BM25 (palavras) e embeddings bge-m3 (significado), gravados em indice/.
     4. Busca ................... as duas listas de candidatos são fundidas por RRF; ficam os 5 melhores trechos.
-    5. Resposta ................ qwen3:4b responde só com os trechos e termina com "(seção X, p. N)".
+    5. Resposta ................ Qwen3-4B responde só com os trechos e termina com "(seção X, p. N)".
 
 Comandos:
     python qa_manual.py              # modo interativo: Pergunta: / Resposta:
@@ -20,14 +20,16 @@ Comandos:
 O sistema cuida sozinho do resto: liga o Ollama se ele estiver desligado (e desliga ao terminar), baixa os modelos
 que faltarem e cria o índice na primeira vez (ou de novo quando o manual.pdf muda).
 
-As métricas ficam no arquivo separado ``avaliar.py``, que usa as funções daqui.
+O ajuste fino fica no arquivo separado ``treinar.py`` e as métricas no ``avaliar.py``; os dois usam as funções daqui.
 """
 
 from __future__ import annotations
 
 import argparse
 import atexit
+import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -52,16 +54,27 @@ ARQ_RESPOSTAS = RAIZ / "resposta.json"
 PASTA_INDICE = RAIZ / "indice"
 ARQ_TRECHOS = PASTA_INDICE / "trechos.json"
 ARQ_VETORES = PASTA_INDICE / "vetores.npy"
+# Impressão digital (SHA-256) do manual indexado: se o manual.pdf mudar, o índice é refeito.
+ARQ_HASH = PASTA_INDICE / "manual.sha256"
 
 # Ollama local: única rede usada pelo sistema (o manual nunca sai da máquina).
 OLLAMA_HOST = "http://localhost:11434"
-# Modelo que lê os trechos e escreve a resposta.
-MODELO_LEITOR = "qwen3:4b"
+# Os comandos "ollama ..." chamados por este programa (e pelo treinar.py e avaliar.py) obedecem à variável de ambiente
+# OLLAMA_HOST. Fixá-la aqui garante que eles também falem só com o Ollama local, mesmo que ela aponte para outro lugar.
+os.environ["OLLAMA_HOST"] = "127.0.0.1:11434"
+# Modelo que lê os trechos e escreve a resposta: Qwen3-4B Instruct (versão 2507), em 4 bits. A tag "qwen3:4b" do
+# Ollama hoje aponta para a versão Thinking, que pensa antes de responder e gastaria o limite de tokens nisso; a tag
+# completa também fixa a versão exata, que o treinar.py precisa conhecer.
+MODELO_LEITOR = "qwen3:4b-instruct-2507-q4_K_M"
 # Modelo que transforma textos em vetores (busca por significado).
 MODELO_EMBEDDINGS = "bge-m3"
 # Modelo que escreve as respostas PROPOSTAS do comando responder. É diferente do leitor de propósito: a resposta
 # aprovada vira gabarito na avaliação, e um leitor não deve ser comparado com respostas escritas por ele mesmo.
 MODELO_GERADOR = "llama3.2:3b"
+# Nome, no Ollama, do leitor ajustado com o texto do manual pelo treinar.py (opcional).
+MODELO_TREINADO = "qwen3-manual"
+# Pasta do treino: dados e adaptador LoRA.
+PASTA_MODELOS = RAIZ / "modelos"
 
 # Tamanho máximo de um trecho, estimado em tokens (palavras x 1,3 é uma boa aproximação para o português).
 MAX_TOKENS_TRECHO = 400
@@ -209,8 +222,13 @@ def _chamar_ollama(funcao, modelo: str):
     print(f"Baixando o modelo {modelo} (só na primeira vez; pode demorar) ...", file=sys.stderr)
     try:
         ollama.Client(host=OLLAMA_HOST, trust_env=False).pull(modelo)
-    except ollama.ResponseError:
-        raise ErroUsuario(f"modelo {modelo} não existe no Ollama; confira o nome") from None
+    except ollama.ResponseError as erro:
+        # "not found" = nome errado; outro erro = falha no download (internet, disco cheio...).
+        if "not found" in str(erro).lower():
+            raise ErroUsuario(f"modelo {modelo} não existe no Ollama; confira o nome") from None
+        raise ErroUsuario(f"não foi possível baixar o modelo {modelo}: {erro}") from None
+    except ConnectionError:
+        raise ErroUsuario(f"não foi possível baixar o modelo {modelo}; confira a internet") from None
     return funcao()
 
 
@@ -247,7 +265,7 @@ def conversar(cliente, modelo: str, prompt: str) -> str:
 
     Entradas:
         cliente: cliente do Ollama.
-        modelo: nome do modelo (ex.: qwen3:4b).
+        modelo: nome do modelo no Ollama.
         prompt: texto completo enviado ao modelo.
     Saídas:
         texto da resposta, sem o bloco de raciocínio <think> que o Qwen3 às vezes devolve.
@@ -502,7 +520,24 @@ def indexar(caminho_pdf: Path) -> int:
     PASTA_INDICE.mkdir(exist_ok=True)
     ARQ_TRECHOS.write_text(json.dumps(trechos, ensure_ascii=False, indent=1), encoding="utf-8")
     np.save(ARQ_VETORES, vetores)
+    ARQ_HASH.write_text(impressao_digital(caminho_pdf), encoding="utf-8")
     return len(trechos)
+
+
+def impressao_digital(caminho: Path) -> str:
+    """SHA-256 do conteúdo de um arquivo (muda se o arquivo mudar, mesmo mantendo nome e data).
+
+    Entradas:
+        caminho: arquivo a ler.
+    Saídas:
+        o hash em hexadecimal.
+    """
+    resumo = hashlib.sha256()
+    with open(caminho, "rb") as arquivo:
+        # Lê em blocos de 1 MB para não carregar o PDF inteiro na memória.
+        for bloco in iter(lambda: arquivo.read(1 << 20), b""):
+            resumo.update(bloco)
+    return resumo.hexdigest()
 
 
 def carregar_indice() -> Indice:
@@ -516,8 +551,12 @@ def carregar_indice() -> Indice:
     import numpy as np
 
     existe = ARQ_TRECHOS.exists() and ARQ_VETORES.exists()
-    # Manual mais novo que o índice = o manual foi trocado; o índice precisa ser refeito.
-    desatualizado = existe and ARQ_MANUAL.exists() and ARQ_MANUAL.stat().st_mtime > ARQ_VETORES.stat().st_mtime
+    # Conteúdo do manual diferente do indexado = o manual foi trocado; o índice precisa ser refeito.
+    desatualizado = (
+        existe
+        and ARQ_MANUAL.exists()
+        and (not ARQ_HASH.exists() or ARQ_HASH.read_text(encoding="utf-8") != impressao_digital(ARQ_MANUAL))
+    )
     if not existe or desatualizado:
         if not ARQ_MANUAL.exists():
             raise ErroUsuario(

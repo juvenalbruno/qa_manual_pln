@@ -9,3 +9,6 @@ matplotlib==3.11.2
 bert-score==0.3.13
 torch==2.14.1
 transformers==5.18.0
+
+# Ajuste fino (treinar.py): só em Mac com Apple Silicon
+mlx-lm==0.32.0; sys_platform == "darwin" and platform_machine == "arm64"

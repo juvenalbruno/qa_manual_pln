@@ -1,5 +1,5 @@
 # Dados do manual (confidenciais): nunca versionar
-manual.pdf
+# manual.pdf
 *.pdf
 perguntas.json
 resposta.json
@@ -12,3 +12,6 @@ resultados/
 *.nosync/
 __pycache__/
 .DS_Store
+
+# Treino (contém texto do manual e modelos grandes)
+modelos/
