@@ -21,6 +21,7 @@ Tudo roda na sua máquina: o manual não é enviado para nenhum serviço externo
 
 ```bash
 brew install python@3.11 ollama
+cd qa-manual                 # todos os comandos rodam de dentro desta pasta
 python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -42,37 +43,60 @@ cmake -S ~/llama.cpp -B ~/llama.cpp/build -DGGML_CUDA=OFF
 cmake --build ~/llama.cpp/build --target llama-perplexity llama-export-lora llama-quantize -j
 ```
 
-Em cada terminal novo, ative o ambiente com `source .venv/bin/activate`. No Linux, instale o Ollama com
-`curl -fsSL https://ollama.com/install.sh | sh`.
+No Linux, instale o Ollama com `curl -fsSL https://ollama.com/install.sh | sh`.
 
 Não deixe a pasta do projeto na Mesa ou em Documentos se o iCloud estiver sincronizando essas pastas (nem em
 Dropbox, OneDrive ou Google Drive): o manual e o índice iriam para a nuvem.
 
 ## Uso
 
+Coloque o `manual.pdf` ao lado do `qa_manual.py`. Em cada terminal novo, entre na pasta e ative o ambiente:
+
 ```bash
-python qa_manual.py              # 1. fazer perguntas
-python qa_manual.py responder    # 2. perguntas.json -> resposta.json (para revisar)
-python treinar.py                # 3. ajuste fino com o manual (uma vez)
+cd qa-manual
+source .venv/bin/activate
+```
+
+Fluxo da avaliação:
+
+```bash
+python treinar.py                # 1. ajuste fino com o manual inteiro (uma vez)
+python qa_manual.py responder    # 2. perguntas.json -> resposta.json
+                                 # 3. revisar o resposta.json à mão
 python avaliar.py                # 4. métricas: leitor original x ajustado
 ```
 
-### 1. Fazer perguntas
+Os passos 1 e 2 são independentes (a ordem entre eles não importa); os dois precisam estar prontos antes do 4. Na
+primeira vez, o comando que rodar primeiro também indexa o manual, o que leva alguns minutos (e de novo sempre que o
+`manual.pdf` mudar).
 
-Coloque o `manual.pdf` ao lado do `qa_manual.py` e rode `python qa_manual.py`. Na primeira vez (e sempre que o
-`manual.pdf` mudar) ele indexa o manual antes, o que leva alguns minutos.
+Para fazer perguntas, a qualquer momento:
 
-```
-Pergunta:
-Qual o prazo para liberação da carga?
-Resposta: A carga é liberada em até 48 horas após a atracação (seção 4.2, p. 17).
-
-Pergunta:
+```bash
+python qa_manual.py                                   # com o leitor original
+python qa_manual.py perguntar --modelo qwen3-manual   # com o leitor ajustado
 ```
 
-Linha vazia ou `sair` encerra.
+### 1. Treinar
 
-### 2. Montar o gabarito
+```bash
+python treinar.py
+```
+
+Ajusta o leitor ao manual (ajuste fino LoRA, em Mac com Apple Silicon, via MLX). Usa o manual inteiro: cada trecho
+do índice vira uma conversa curta ("O que diz o manual na seção X (p. N)?" → o texto do trecho), e o modelo treina
+por 2 passadas sobre todos eles. No fim, o modelo ajustado é registrado no Ollama como `qwen3-manual`.
+
+- Roda uma vez (de novo só se o manual mudar). Leva de minutos a algumas horas, conforme o tamanho do manual.
+- Disco: o adaptador treinado tem poucos MB e é somado direto ao arquivo do leitor que o Ollama já tem; as camadas
+  treinadas voltam a ser compactadas em 4 bits. O pico é de ~6 GB livres durante o treino e, no fim, o `qwen3-manual`
+  ocupa ~2,5 GB (o mesmo tamanho do leitor original). Os arquivos intermediários são apagados.
+- Baixa os pesos MLX do leitor (~2,3 GB) para treinar e apaga ao terminar. Nenhum texto do manual sai da máquina.
+- Treino mais curto: `python treinar.py --epocas 1`.
+
+Os dados e o adaptador ficam em `modelos/` (não vai para o git).
+
+### 2 e 3. Montar o gabarito
 
 **a) Escreva o `perguntas.json`** ao lado do `qa_manual.py` (de 50 a 100 perguntas; inclua algumas que o manual
 não responde, para medir se o sistema sabe dizer que não sabe):
@@ -108,26 +132,6 @@ Ele não sobrescreve um `resposta.json` existente (use `--forcar` para gerar de 
 - Resposta errada: corrija o texto de `"resposta"` (e `"secao"`/`"pagina"`, se for outro lugar) e marque `true`.
 - Pergunta que o manual não responde: `"resposta": "Não encontrado no manual"`, `"tipo": "sem_resposta"`, `true`.
 - Itens com `false` são ignorados na avaliação.
-
-### 3. Treinar
-
-```bash
-python treinar.py
-```
-
-Ajusta o leitor ao manual (ajuste fino LoRA, em Mac com Apple Silicon, via MLX). Usa o manual inteiro: cada trecho
-do índice vira uma conversa curta ("O que diz o manual na seção X (p. N)?" → o texto do trecho), e o modelo treina
-por 2 passadas sobre todos eles. No fim, o modelo ajustado é registrado no Ollama como `qwen3-manual`.
-
-- Roda uma vez (de novo só se o manual mudar). Leva de minutos a algumas horas, conforme o tamanho do manual.
-- Disco: o adaptador treinado tem poucos MB e é somado direto ao arquivo do leitor que o Ollama já tem; as camadas
-  treinadas voltam a ser compactadas em 4 bits. O pico é de ~6 GB livres durante o treino e, no fim, o `qwen3-manual`
-  ocupa ~2,5 GB (o mesmo tamanho do leitor original). Os arquivos intermediários são apagados.
-- Baixa os pesos MLX do leitor (~2,3 GB) para treinar e apaga ao terminar. Nenhum texto do manual sai da máquina.
-- Treino mais curto: `python treinar.py --epocas 1`.
-- Para conversar com o modelo ajustado: `python qa_manual.py perguntar --modelo qwen3-manual`.
-
-Os dados e o adaptador ficam em `modelos/` (não vai para o git).
 
 ### 4. Avaliar
 
@@ -174,6 +178,20 @@ Opções, se precisar:
 | `--modelos modelo1 modelo2` | Escolhe os leitores (padrão: o leitor original e, se existir, `qwen3-manual`) |
 | `--sem-bertscore`, `--sem-perplexidade` | Pula essas métricas |
 | `--llama-perplexity caminho` | Se o llama.cpp não estiver em `~/llama.cpp` |
+
+### Fazer perguntas
+
+`python qa_manual.py` abre o modo interativo:
+
+```
+Pergunta:
+Qual o prazo para liberação da carga?
+Resposta: A carga é liberada em até 48 horas após a atracação (seção 4.2, p. 17).
+
+Pergunta:
+```
+
+Linha vazia ou `sair` encerra.
 
 ## Problemas comuns
 
