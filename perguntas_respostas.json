@@ -1,0 +1,252 @@
+[
+  {
+    "id": 1,
+    "pergunta": "Quais instituições participaram da elaboração do Manual de Fiscalização Portuária?",
+    "resposta": "O manual foi elaborado em esforço conjunto entre colaboradores da Companhia Docas do Pará (CDP) e servidores da ANTAQ (Agência Nacional de Transportes Aquaviários), possibilitando maior harmonização na atuação fiscalizadora conjunta da Autoridade Portuária e da Agência Reguladora."
+  },
+  {
+    "id": 2,
+    "pergunta": "Qual é o objetivo principal do Manual de Fiscalização Portuária?",
+    "resposta": "Instruir e orientar os processos de fiscalização sob responsabilidade da Autoridade Portuária, previstos no § 1º do art. 17 da Lei nº 12.815/2013, e uniformizar os procedimentos fiscalizadores aplicados em todas as áreas de atuação da Autoridade Administrativa das unidades portuárias da CDP."
+  },
+  {
+    "id": 3,
+    "pergunta": "Como o manual define o Agente Fiscal da Autoridade Portuária?",
+    "resposta": "É todo colaborador designado, representante da Administração Portuária, treinado, capacitado e habilitado por suas respectivas áreas para fiscalizar pessoas físicas e jurídicas quanto à realização dos serviços de acordo com a legalidade, a moralidade, a eficiência, a segurança e o respeito ao meio ambiente."
+  },
+  {
+    "id": 4,
+    "pergunta": "Qual é a diferença entre Áreas Arrendadas e Áreas Não Arrendadas?",
+    "resposta": "Ambas ficam dentro dos Portos Organizados da CDP, sob gestão da Autoridade Portuária. As Áreas Arrendadas são utilizáveis pela Arrendatária, nas condições da legislação de regência, do contrato de arrendamento e/ou do Regulamento de Exploração do Porto; as Áreas Não Arrendadas são utilizáveis pelos operadores portuários pré-qualificados, nas condições da legislação de regência e do Regulamento de Exploração do Porto."
+  },
+  {
+    "id": 5,
+    "pergunta": "O que é o Auto de Infração e quem o lavra?",
+    "resposta": "É o documento lavrado pelo Agente de Fiscalização, mediante Ação Fiscalizadora, por meio do qual se registra e se cientifica o interessado da prática de infração administrativa, aplicando, quando necessário, Medidas Administrativas Cautelares. O Agente de Fiscalização é servidor da ANTAQ ou de outro órgão público interveniente com competência para fiscalizar, ou outro servidor designado por força de convênio de cooperação técnica e administrativa entre órgãos e entidades da Administração Pública."
+  },
+  {
+    "id": 6,
+    "pergunta": "O que é a Notificação, segundo o manual?",
+    "resposta": "É a determinação exarada pelo Agente Fiscal da Autoridade Portuária em campo específico do Relatório de Inspeção Portuária (RIP), contendo ordem de fazer ou não fazer, a fim de regularizar a não conformidade constatada."
+  },
+  {
+    "id": 7,
+    "pergunta": "Como o manual define Operador Portuário?",
+    "resposta": "É a pessoa jurídica pré-qualificada pela Autoridade Portuária para a movimentação e armazenagem de mercadorias destinadas ou provenientes de transporte aquaviário, realizada nos Portos Organizados da CDP."
+  },
+  {
+    "id": 8,
+    "pergunta": "Quem exerce o Poder Concedente, segundo o manual?",
+    "resposta": "A União, por intermédio do Ministério de Portos e Aeroportos, ao qual compete elaborar o planejamento setorial portuário, entre outras competências previstas na Lei nº 12.815/2013."
+  },
+  {
+    "id": 9,
+    "pergunta": "Qual é a diferença entre o Procedimento de Fiscalização da Autoridade Portuária e o Processo Administrativo Sancionador?",
+    "resposta": "O Procedimento de Fiscalização decorre da atividade fiscalizadora da Autoridade Portuária e se destina a identificar irregularidades, adotar ações para correção da conduta e submeter os casos à apuração da ANTAQ ou de outros órgãos. O Processo Administrativo Sancionador decorre da fiscalização da ANTAQ ou de outro órgão público interveniente e se destina à apuração de infrações administrativas e à cominação de sanções."
+  },
+  {
+    "id": 10,
+    "pergunta": "O que é o Relatório de Inspeção Portuária (RIP)?",
+    "resposta": "É o documento utilizado pelo Agente Fiscal da Autoridade Portuária para descrever a irregularidade identificada em relação à Lei nº 12.815/2013, às normas da ANTAQ e à legislação, regulamentação e normativas relativas a operações e logística portuárias, segurança pública portuária, infraestrutura e patrimônio público, segurança e saúde do trabalho e meio ambiente. Contém notificação com ordem de fazer ou não fazer para regularizar a situação nitidamente constatada."
+  },
+  {
+    "id": 11,
+    "pergunta": "O que é o Relatório de Ocorrência Portuária (ROP)?",
+    "resposta": "É o documento utilizado pela Autoridade Portuária, contendo o RIP e seus anexos, para reportar e representar perante a ANTAQ ou outro órgão público interveniente quando houver indícios de infração administrativa, uma vez identificadas a autoria e a materialidade."
+  },
+  {
+    "id": 12,
+    "pergunta": "Quais incisos do § 1º do art. 17 da Lei nº 12.815/2013 o manual destaca como relativos à fiscalização e o que eles atribuem à Autoridade Portuária?",
+    "resposta": "Os incisos V, VI e XI, que atribuem à Autoridade Portuária: fiscalizar ou executar as obras de construção, reforma, ampliação, melhoramento e conservação das instalações portuárias (V); fiscalizar a operação portuária, zelando pela regularidade, eficiência, segurança e respeito ao meio ambiente (VI); e reportar infrações e representar perante a ANTAQ, visando à instauração de processo administrativo e à aplicação das penalidades previstas em lei, em regulamento e nos contratos (XI)."
+  },
+  {
+    "id": 13,
+    "pergunta": "Qual resolução da ANTAQ trata do Manual de Análise e Fiscalização de Projeto Executivo em Arrendamentos Portuários e quando ela foi publicada?",
+    "resposta": "A Resolução ANTAQ nº 52/2021, publicada pela ANTAQ em 18/08/2021."
+  },
+  {
+    "id": 14,
+    "pergunta": "Segundo o art. 46 da Lei nº 12.815/2013, quem responde por infração e quais condutas a caracterizam?",
+    "resposta": "Responde, conjunta ou isoladamente, qualquer pessoa física ou jurídica que, intervindo na operação portuária, concorra para a prática da infração ou dela se beneficie. Caracteriza infração toda ação ou omissão, voluntária ou involuntária, que importe em: realização de operações portuárias com infringência à Lei ou inobservância dos regulamentos do porto; recusa injustificada, pelo órgão de gestão de mão de obra, da distribuição de trabalhadores a qualquer operador portuário; ou utilização de terrenos, áreas, equipamentos e instalações portuárias, dentro ou fora do Porto Organizado, com desvio de finalidade ou desrespeito à lei ou aos regulamentos."
+  },
+  {
+    "id": 15,
+    "pergunta": "Quais penas o art. 47 da Lei nº 12.815/2013 prevê para as infrações?",
+    "resposta": "Advertência; multa; proibição de ingresso na área do porto por 30 a 180 dias; suspensão da atividade de operador portuário por 30 a 180 dias; e cancelamento do credenciamento do operador portuário. As penas são aplicadas separada ou cumulativamente, conforme a gravidade da infração."
+  },
+  {
+    "id": 16,
+    "pergunta": "Qual dispositivo legal atribui à ANTAQ a competência de fiscalizar as administrações de portos organizados, os operadores portuários e as arrendatárias ou autorizatárias de instalações portuárias?",
+    "resposta": "O art. 51-A da Lei nº 10.233/2001, em alteração implementada pelo art. 71 da Lei nº 12.815/2013."
+  },
+  {
+    "id": 17,
+    "pergunta": "A quem compete aplicar as sanções decorrentes da fiscalização portuária?",
+    "resposta": "À ANTAQ. Embora a Autoridade Portuária fiscalize em conjunto com a agência, a competência para aplicar sanções, nos termos das Leis nº 12.815/2013 e nº 10.233/2001, é da ANTAQ. A exceção é a cassação de concessão e de arrendamento, que cabe ao Poder Concedente, mediante proposta da ANTAQ."
+  },
+  {
+    "id": 18,
+    "pergunta": "Do que trata a Resolução ANTAQ nº 3.259/2014?",
+    "resposta": "Trata do rito processual e do procedimento sancionador interno em matéria de competência da própria ANTAQ e de seus agentes, sendo a norma aplicável aos processos fiscalizadores e sancionadores sobre os portos."
+  },
+  {
+    "id": 19,
+    "pergunta": "A quem se destina a Resolução ANTAQ nº 75/2022 e do que ela trata?",
+    "resposta": "Destina-se às administrações dos portos organizados, aos autorizatários e arrendatários de áreas e instalações portuárias e aos operadores portuários. Dispõe sobre a fiscalização da prestação dos serviços portuários e estabelece infrações administrativas."
+  },
+  {
+    "id": 20,
+    "pergunta": "Quais Regulamentos de Exploração de Portos Organizados da CDP o manual lista entre as normas vigentes da Autoridade Portuária?",
+    "resposta": "Os Regulamentos de Exploração dos Portos Organizados de Belém (IN – 4103.01), de Vila do Conde (IN – 4104.01) e de Santarém (4105.01)."
+  },
+  {
+    "id": 21,
+    "pergunta": "Qual é o caráter prioritário do processo de fiscalização da Autoridade Portuária?",
+    "resposta": "Preventivo e educativo, visando evitar o agravamento de situação infracional já consumada ou mitigar o risco de ocorrência de fato infracional."
+  },
+  {
+    "id": 22,
+    "pergunta": "De que formas as ações fiscalizadoras da Autoridade Portuária podem ser realizadas?",
+    "resposta": "De rotina, seguindo uma lista de atividades ou sequência de procedimentos que ocorrem periodicamente ou a qualquer tempo, conforme a necessidade; de ofício, sem prévia denúncia ou agendamento, ou quando haja indícios de irregularidades; por denúncia, quando se recebe comunicação que aponte indícios de irregularidades; e por força do Plano Anual de Fiscalização (PAF)."
+  },
+  {
+    "id": 23,
+    "pergunta": "O que é o Plano Anual de Fiscalização (PAF) e a quem ele é submetido?",
+    "resposta": "É o planejamento anual das ações de fiscalização dos arrendamentos portuários, que materializa a programação das fiscalizações mais amplas e complexas, e é submetido previamente à Diretoria da CDP. Também pode ser adotado para fiscalizar operadores portuários e operações portuárias, com aprovação da mesma Diretoria."
+  },
+  {
+    "id": 24,
+    "pergunta": "O que são os Relatórios de Acompanhamento Mensal dos Contratos de Arrendamentos e com que frequência são enviados à ANTAQ?",
+    "resposta": "São relatórios emitidos pela Autoridade Portuária com informações das fiscalizações realizadas, das notificações emitidas e das respectivas correções apresentadas. Devem ser remetidos à ANTAQ mensalmente, para o pleno acompanhamento das atividades fiscalizatórias da Autoridade Portuária."
+  },
+  {
+    "id": 25,
+    "pergunta": "O que é o ROIP, quem o emite e por que ele substitui o ROP?",
+    "resposta": "O Registro de Ocorrência de Incidente de Proteção (ROIP) é emitido pelo Chefe da Segurança Portuária e substitui o ROP por exigência normativa da Resolução nº 53/2020 da CONPORTOS."
+  },
+  {
+    "id": 26,
+    "pergunta": "Que informações do ente fiscalizado o RIP deve necessariamente conter?",
+    "resposta": "Informações como razão social, CNPJ/CPF e atividade principal do ente fiscalizado."
+  },
+  {
+    "id": 27,
+    "pergunta": "O que acontece com o RIP quando as medidas corretivas sanam a irregularidade?",
+    "resposta": "O RIP é arquivado em setor específico da Autoridade Portuária, ficando disponível para consulta posterior e constituindo evidência das ações de fiscalização para efeitos regulatórios e de controle."
+  },
+  {
+    "id": 28,
+    "pergunta": "Em que prazo o ROP deve ser encaminhado à ANTAQ e com qual fundamento normativo?",
+    "resposta": "No prazo de 72 horas da conclusão do procedimento de fiscalização, acompanhado do respectivo RIP e anexos, conforme o art. 34, inciso XXVIII, da Resolução ANTAQ nº 75/2022."
+  },
+  {
+    "id": 29,
+    "pergunta": "O que a ANTAQ verifica ao receber o ROP e por quê?",
+    "resposta": "Verifica o efetivo recebimento da notificação pelo notificado e o cumprimento da intimação. Se a efetividade da intimação não for comprovada, o procedimento da Autoridade Portuária não afasta a necessidade de emissão de NOCI pela ANTAQ, o que evita hipóteses de nulidade processual, conforme a Ordem de Serviço nº 6/2020/SFC."
+  },
+  {
+    "id": 30,
+    "pergunta": "Em qual sistema tramita o processo administrativo fiscalizador e qual documento oficializa sua abertura?",
+    "resposta": "O processo tramita no sistema SEI, por meio de cadastramento de processo digital, e sua abertura é oficializada pelo Relatório de Inspeção Portuária (RIP)."
+  },
+  {
+    "id": 31,
+    "pergunta": "De que formas o RIP pode ser preenchido, segundo o passo a passo da Tabela 1?",
+    "resposta": "À mão, com caneta, no formulário RIP previamente impresso, ou digitalmente, no Excel ou programa similar, com posterior impressão ou salvamento em PDF."
+  },
+  {
+    "id": 32,
+    "pergunta": "O que o Gerente/Chefe deve fazer ao receber no SEI um processo cuja irregularidade não foi sanada no prazo?",
+    "resposta": "Deve submeter o caso à Diretoria da CDP com instrução técnica para análise e deliberação. Se a Diretoria decidir pela lavratura do ROP, este é encaminhado à ANTAQ para possível instauração do processo sancionador."
+  },
+  {
+    "id": 33,
+    "pergunta": "Quais são as oito áreas de atuação fiscalizadora da Autoridade Portuária?",
+    "resposta": "1) Operações e Logística Portuárias Marítimas e Terrestres; 2) Segurança Pública Portuária; 3) Segurança no Trânsito Interno; 4) Segurança e Saúde do Trabalho; 5) Meio Ambiente; 6) Infraestrutura Portuária e Patrimônio Público; 7) Contratos de Arrendamento e Cessão de Uso de Áreas ou Instalações Portuárias; 8) Procedimentos Administrativos."
+  },
+  {
+    "id": 34,
+    "pergunta": "Como a Autoridade Portuária acompanha as manobras de embarcações e quais envolvidos são fiscalizados?",
+    "resposta": "Por meio de rádio VHF, fiscalizando a atuação e a presença dos envolvidos nas manobras: agente, prático, lancha, rebocadores e amarradores."
+  },
+  {
+    "id": 35,
+    "pergunta": "Como é feito o controle de acesso nas portarias e no cais, na área de Segurança Pública Portuária?",
+    "resposta": "Nas portarias, o acesso é permitido mediante crachás, autorizações de acesso ou web triagem, no caso de veículos de carga. No cais, pessoas acessam mediante crachás (letras C e E) e veículos mediante autorização e averiguação de plotagem."
+  },
+  {
+    "id": 36,
+    "pergunta": "Quais temas específicos do contrato de arrendamento são acompanhados pela Autoridade Portuária?",
+    "resposta": "Caução de garantia, seguro, investimentos, movimentação mínima contratual (MMC), licenciamento ambiental, auditoria ambiental e certificação de qualidade, quando exigida em contrato."
+  },
+  {
+    "id": 37,
+    "pergunta": "Qual é a multa máxima por receber ou fazer adentrar na área do porto veículo de carga sem o devido agendamento, e cabe RIP nesse caso?",
+    "resposta": "Multa de até R$ 2.000,00 por veículo em situação irregular, aplicada pela ANTAQ (art. 33, inciso I, da Resolução ANTAQ nº 75/2022). Não cabe RIP: o prazo para saneamento é de 0 dia, pois a infração causa dano efetivo ou potencial, contribuindo para diversos transtornos operacionais."
+  },
+  {
+    "id": 38,
+    "pergunta": "Quais são os prazos de saneamento quando não são asseguradas condições mínimas de higiene e limpeza nas áreas e instalações?",
+    "resposta": "1 dia para operador portuário em operação no cais/píer público com limpeza simples (varrição ou equivalente), devendo a limpeza ser providenciada de pronto se houver nova operação logo em seguida; 15 dias para operações em áreas arrendadas ou privadas que demandem limpeza, acondicionamento ou destinação de resíduos ou controle de pragas/vetores, sem necessidade de desincorporação de bens; e 60 dias para essas mesmas operações quando houver necessidade de pedido de desincorporação de bens públicos nas áreas arrendadas."
+  },
+  {
+    "id": 39,
+    "pergunta": "Em que prazo deve ser informada à ANTAQ a interrupção da atividade portuária por mais de 24 horas, e qual a multa pelo descumprimento?",
+    "resposta": "Em até 24 horas da ocorrência, o mesmo valendo para o reinício da atividade. O descumprimento pode gerar multa de até R$ 20.000,00 (art. 33, inciso XII, da Resolução ANTAQ nº 75/2022), sem possibilidade de RIP."
+  },
+  {
+    "id": 40,
+    "pergunta": "Qual é o prazo de saneamento para quem não contrata ou deixa de renovar o seguro de responsabilidade civil e de acidentes pessoais exigido?",
+    "resposta": "90 dias, com notificação via RIP. A infração pode ensejar multa de até R$ 100.000,00 (art. 33, inciso XVII, da Resolução ANTAQ nº 75/2022)."
+  },
+  {
+    "id": 41,
+    "pergunta": "Qual é o procedimento quando alguém dá causa a dano ambiental nas áreas e instalações portuárias ou em áreas adjacentes?",
+    "resposta": "Não cabe RIP: a infração causa dano efetivo ou dano potencial grave e demanda lavratura de ROP de imediato. A multa pode chegar a R$ 500.000,00 (art. 33, inciso XXXIII, da Resolução ANTAQ nº 75/2022)."
+  },
+  {
+    "id": 42,
+    "pergunta": "Qual é a multa máxima para quem subempreita, transfere ou delega operação portuária sob sua responsabilidade a operador portuário não pré-qualificado?",
+    "resposta": "Até R$ 1.000.000,00 (art. 33, inciso XXXVIII, da Resolução ANTAQ nº 75/2022). Não cabe RIP e a infração demanda lavratura de ROP de imediato."
+  },
+  {
+    "id": 43,
+    "pergunta": "Até quando o arrendatário deve encaminhar à ANTAQ a lista atualizada de bens vinculados ao arrendamento e o relatório de diagnóstico das instalações e equipamentos?",
+    "resposta": "A lista atualizada de bens vinculados ao arrendamento deve ser enviada até 30 de abril do ano subsequente, conforme a norma de controle patrimonial dos portos organizados, ou no prazo contratualmente estabelecido; o relatório com diagnóstico das condições e da integridade das instalações e equipamentos, acompanhado do plano de conservação, também até 30 de abril do ano subsequente. O descumprimento admite RIP com prazo de 30 dias e pode gerar multa de até R$ 10.000,00 (art. 35, inciso III, alíneas “a” e “b”, da Resolução ANTAQ nº 75/2022)."
+  },
+  {
+    "id": 44,
+    "pergunta": "Qual é a multa máxima para o operador portuário que realiza atividades sem estar devidamente pré-qualificado pela Autoridade Portuária?",
+    "resposta": "Até R$ 500.000,00 (art. 36, inciso VI, da Resolução ANTAQ nº 75/2022). Não cabe RIP, pois a infração causa dano efetivo ou potencial e diversos transtornos operacionais."
+  },
+  {
+    "id": 45,
+    "pergunta": "Quais são as etapas para a definição de metas dos processos de fiscalização?",
+    "resposta": "1) Análise do histórico dos indicadores, para identificar sazonalidades, tendências ou outros comportamentos; 2) Proposição de metas baseada em melhorias relativas, ou seja, incrementais; 3) Validação/consenso com as áreas envolvidas. As metas devem ser desafiadoras, claras e factíveis."
+  },
+  {
+    "id": 46,
+    "pergunta": "Qual indicador de fiscalização o manual adota para as áreas de fiscalização e com qual planejamento ele está alinhado?",
+    "resposta": "Para cada área listada na Tabela 4, o indicador é o número de RIPs e ROPs emitidos relativos àquela área. Os indicadores e metas estão alinhados ao item 6 (Indicadores e Metas Estratégicas) do Planejamento Estratégico Integrado (PEIN) vigente."
+  },
+  {
+    "id": 47,
+    "pergunta": "No modelo de RIP do Anexo I, quais tipos de ente fiscalizado podem ser assinalados?",
+    "resposta": "Operador portuário, Arrendatário, Agência Marítima ou Outro, a especificar."
+  },
+  {
+    "id": 48,
+    "pergunta": "Segundo a Matriz de Responsabilidades do Anexo III, qual é a responsabilidade quando a movimentação ou armazenagem de carga é compartilhada por dois ou mais operadores?",
+    "resposta": "Os operadores serão solidariamente responsáveis perante o usuário, a administração do porto e a ANTAQ."
+  },
+  {
+    "id": 49,
+    "pergunta": "Segundo a Matriz de Responsabilidades, quem responde por serviço executado por terceiros e por pessoas, máquinas, equipamentos ou veículos que entram na área portuária a serviço do operador?",
+    "resposta": "O operador portuário. Ainda que executado por terceiros, o serviço permanece sob responsabilidade do operador portuário a que estiver afeta a atividade, e ele se responsabiliza por qualquer pessoa, máquina, equipamento ou veículo que adentrar na área portuária a seu serviço."
+  },
+  {
+    "id": 50,
+    "pergunta": "Quando o operador portuário deve recusar o recebimento de mercadorias?",
+    "resposta": "Quando as mercadorias destinadas a embarque ou provenientes de desembarque se apresentarem em condições inadequadas ao transporte, à armazenagem, à manipulação e à entrega à embarcação, devendo o operador comunicar o ocorrido à Autoridade Portuária."
+  }
+]

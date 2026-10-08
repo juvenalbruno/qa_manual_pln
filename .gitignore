@@ -1,8 +1,8 @@
 # Dados do manual (confidenciais): nunca versionar
 # manual.pdf
 *.pdf
-perguntas.json
-resposta.json
+# perguntas.json
+# resposta.json
 indice/
 resultados/
 

@@ -1,0 +1,202 @@
+[
+  {
+    "id": 1,
+    "pergunta": "Quais instituições participaram da elaboração do Manual de Fiscalização Portuária?"
+  },
+  {
+    "id": 2,
+    "pergunta": "Qual é o objetivo principal do Manual de Fiscalização Portuária?"
+  },
+  {
+    "id": 3,
+    "pergunta": "Como o manual define o Agente Fiscal da Autoridade Portuária?"
+  },
+  {
+    "id": 4,
+    "pergunta": "Qual é a diferença entre Áreas Arrendadas e Áreas Não Arrendadas?"
+  },
+  {
+    "id": 5,
+    "pergunta": "O que é o Auto de Infração e quem o lavra?"
+  },
+  {
+    "id": 6,
+    "pergunta": "O que é a Notificação, segundo o manual?"
+  },
+  {
+    "id": 7,
+    "pergunta": "Como o manual define Operador Portuário?"
+  },
+  {
+    "id": 8,
+    "pergunta": "Quem exerce o Poder Concedente, segundo o manual?"
+  },
+  {
+    "id": 9,
+    "pergunta": "Qual é a diferença entre o Procedimento de Fiscalização da Autoridade Portuária e o Processo Administrativo Sancionador?"
+  },
+  {
+    "id": 10,
+    "pergunta": "O que é o Relatório de Inspeção Portuária (RIP)?"
+  },
+  {
+    "id": 11,
+    "pergunta": "O que é o Relatório de Ocorrência Portuária (ROP)?"
+  },
+  {
+    "id": 12,
+    "pergunta": "Quais incisos do § 1º do art. 17 da Lei nº 12.815/2013 o manual destaca como relativos à fiscalização e o que eles atribuem à Autoridade Portuária?"
+  },
+  {
+    "id": 13,
+    "pergunta": "Qual resolução da ANTAQ trata do Manual de Análise e Fiscalização de Projeto Executivo em Arrendamentos Portuários e quando ela foi publicada?"
+  },
+  {
+    "id": 14,
+    "pergunta": "Segundo o art. 46 da Lei nº 12.815/2013, quem responde por infração e quais condutas a caracterizam?"
+  },
+  {
+    "id": 15,
+    "pergunta": "Quais penas o art. 47 da Lei nº 12.815/2013 prevê para as infrações?"
+  },
+  {
+    "id": 16,
+    "pergunta": "Qual dispositivo legal atribui à ANTAQ a competência de fiscalizar as administrações de portos organizados, os operadores portuários e as arrendatárias ou autorizatárias de instalações portuárias?"
+  },
+  {
+    "id": 17,
+    "pergunta": "A quem compete aplicar as sanções decorrentes da fiscalização portuária?"
+  },
+  {
+    "id": 18,
+    "pergunta": "Do que trata a Resolução ANTAQ nº 3.259/2014?"
+  },
+  {
+    "id": 19,
+    "pergunta": "A quem se destina a Resolução ANTAQ nº 75/2022 e do que ela trata?"
+  },
+  {
+    "id": 20,
+    "pergunta": "Quais Regulamentos de Exploração de Portos Organizados da CDP o manual lista entre as normas vigentes da Autoridade Portuária?"
+  },
+  {
+    "id": 21,
+    "pergunta": "Qual é o caráter prioritário do processo de fiscalização da Autoridade Portuária?"
+  },
+  {
+    "id": 22,
+    "pergunta": "De que formas as ações fiscalizadoras da Autoridade Portuária podem ser realizadas?"
+  },
+  {
+    "id": 23,
+    "pergunta": "O que é o Plano Anual de Fiscalização (PAF) e a quem ele é submetido?"
+  },
+  {
+    "id": 24,
+    "pergunta": "O que são os Relatórios de Acompanhamento Mensal dos Contratos de Arrendamentos e com que frequência são enviados à ANTAQ?"
+  },
+  {
+    "id": 25,
+    "pergunta": "O que é o ROIP, quem o emite e por que ele substitui o ROP?"
+  },
+  {
+    "id": 26,
+    "pergunta": "Que informações do ente fiscalizado o RIP deve necessariamente conter?"
+  },
+  {
+    "id": 27,
+    "pergunta": "O que acontece com o RIP quando as medidas corretivas sanam a irregularidade?"
+  },
+  {
+    "id": 28,
+    "pergunta": "Em que prazo o ROP deve ser encaminhado à ANTAQ e com qual fundamento normativo?"
+  },
+  {
+    "id": 29,
+    "pergunta": "O que a ANTAQ verifica ao receber o ROP e por quê?"
+  },
+  {
+    "id": 30,
+    "pergunta": "Em qual sistema tramita o processo administrativo fiscalizador e qual documento oficializa sua abertura?"
+  },
+  {
+    "id": 31,
+    "pergunta": "De que formas o RIP pode ser preenchido, segundo o passo a passo da Tabela 1?"
+  },
+  {
+    "id": 32,
+    "pergunta": "O que o Gerente/Chefe deve fazer ao receber no SEI um processo cuja irregularidade não foi sanada no prazo?"
+  },
+  {
+    "id": 33,
+    "pergunta": "Quais são as oito áreas de atuação fiscalizadora da Autoridade Portuária?"
+  },
+  {
+    "id": 34,
+    "pergunta": "Como a Autoridade Portuária acompanha as manobras de embarcações e quais envolvidos são fiscalizados?"
+  },
+  {
+    "id": 35,
+    "pergunta": "Como é feito o controle de acesso nas portarias e no cais, na área de Segurança Pública Portuária?"
+  },
+  {
+    "id": 36,
+    "pergunta": "Quais temas específicos do contrato de arrendamento são acompanhados pela Autoridade Portuária?"
+  },
+  {
+    "id": 37,
+    "pergunta": "Qual é a multa máxima por receber ou fazer adentrar na área do porto veículo de carga sem o devido agendamento, e cabe RIP nesse caso?"
+  },
+  {
+    "id": 38,
+    "pergunta": "Quais são os prazos de saneamento quando não são asseguradas condições mínimas de higiene e limpeza nas áreas e instalações?"
+  },
+  {
+    "id": 39,
+    "pergunta": "Em que prazo deve ser informada à ANTAQ a interrupção da atividade portuária por mais de 24 horas, e qual a multa pelo descumprimento?"
+  },
+  {
+    "id": 40,
+    "pergunta": "Qual é o prazo de saneamento para quem não contrata ou deixa de renovar o seguro de responsabilidade civil e de acidentes pessoais exigido?"
+  },
+  {
+    "id": 41,
+    "pergunta": "Qual é o procedimento quando alguém dá causa a dano ambiental nas áreas e instalações portuárias ou em áreas adjacentes?"
+  },
+  {
+    "id": 42,
+    "pergunta": "Qual é a multa máxima para quem subempreita, transfere ou delega operação portuária sob sua responsabilidade a operador portuário não pré-qualificado?"
+  },
+  {
+    "id": 43,
+    "pergunta": "Até quando o arrendatário deve encaminhar à ANTAQ a lista atualizada de bens vinculados ao arrendamento e o relatório de diagnóstico das instalações e equipamentos?"
+  },
+  {
+    "id": 44,
+    "pergunta": "Qual é a multa máxima para o operador portuário que realiza atividades sem estar devidamente pré-qualificado pela Autoridade Portuária?"
+  },
+  {
+    "id": 45,
+    "pergunta": "Quais são as etapas para a definição de metas dos processos de fiscalização?"
+  },
+  {
+    "id": 46,
+    "pergunta": "Qual indicador de fiscalização o manual adota para as áreas de fiscalização e com qual planejamento ele está alinhado?"
+  },
+  {
+    "id": 47,
+    "pergunta": "No modelo de RIP do Anexo I, quais tipos de ente fiscalizado podem ser assinalados?"
+  },
+  {
+    "id": 48,
+    "pergunta": "Segundo a Matriz de Responsabilidades do Anexo III, qual é a responsabilidade quando a movimentação ou armazenagem de carga é compartilhada por dois ou mais operadores?"
+  },
+  {
+    "id": 49,
+    "pergunta": "Segundo a Matriz de Responsabilidades, quem responde por serviço executado por terceiros e por pessoas, máquinas, equipamentos ou veículos que entram na área portuária a serviço do operador?"
+  },
+  {
+    "id": 50,
+    "pergunta": "Quando o operador portuário deve recusar o recebimento de mercadorias?"
+  }
+]
