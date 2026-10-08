@@ -7,7 +7,7 @@
     "secao": "",
     "pagina": 2,
     "trecho": "t0001",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -18,7 +18,7 @@
     "secao": "",
     "pagina": 2,
     "trecho": "t0001",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -29,7 +29,7 @@
     "secao": "",
     "pagina": 4,
     "trecho": "t0003",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -41,7 +41,7 @@
     "pagina": 4,
     "trecho": "t0002",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Definições corretas (p. 4), mas a última frase está truncada ('...que podem ser realizadas em') e não tem respaldo no manual: as duas áreas estão sob a gestão da Autoridade Portuária, e o manual não fala em 'tipo de operações'. A diferença está em quem utiliza e no instrumento que rege: áreas arrendadas, pela Arrendatária, conforme o contrato de arrendamento e/ou o Regulamento de Exploração do Porto; áreas não arrendadas, pelos operadores portuários pré-qualificados, conforme o Regulamento de Exploração do Porto."
   },
   {
     "id": "5",
@@ -51,7 +51,7 @@
     "secao": "",
     "pagina": 25,
     "trecho": "t0036",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -62,7 +62,7 @@
     "secao": "",
     "pagina": 4,
     "trecho": "t0003",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -73,7 +73,7 @@
     "secao": "",
     "pagina": 30,
     "trecho": "t0039",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -84,7 +84,7 @@
     "secao": "",
     "pagina": 6,
     "trecho": "t0005",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -96,7 +96,7 @@
     "pagina": 12,
     "trecho": "t0012",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Definições corretas (p. 5), mas a resposta termina truncada ('...que em seguida inici'). Ao reescrever a última frase, considere que o procedimento da Autoridade Portuária pode terminar em arquivamento, quando a situação é regularizada, sem chegar ao processo sancionador (p. 12)."
   },
   {
     "id": "10",
@@ -107,7 +107,7 @@
     "pagina": 26,
     "trecho": "t0038",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Incompleta: diz apenas que o RIP oficializa a abertura do processo no SEI (p. 12) e omite o que o RIP é (p. 5 e 10): documento do Agente Fiscal da Autoridade Portuária que descreve a irregularidade identificada e contém notificação com ordem de fazer ou não fazer, a fim de regularizar a situação constatada."
   },
   {
     "id": "11",
@@ -117,7 +117,7 @@
     "secao": "",
     "pagina": 26,
     "trecho": "t0038",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -129,7 +129,7 @@
     "pagina": 2,
     "trecho": "t0001",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Os três conteúdos estão certos, mas a numeração dos incisos está trocada. O correto é: V – fiscalizar ou executar as obras de construção, reforma, ampliação, melhoramento e conservação das instalações portuárias; VI – fiscalizar a operação portuária; XI – reportar infrações e representar perante a ANTAQ. O manual lista os três nessa ordem (p. 6) e associa o inciso V às obras (p. 6 e 16). A resposta ainda termina com 'Fonte:' vazio."
   },
   {
     "id": "13",
@@ -139,7 +139,7 @@
     "secao": "",
     "pagina": 7,
     "trecho": "t0006",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -151,7 +151,7 @@
     "pagina": 6,
     "trecho": "t0005",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Itens I a III corretos (p. 6), mas a resposta termina com 'Fonte:' vazio. Corrigir também a primeira frase: no manual, responde pela infração, conjunta ou isoladamente, quem, intervindo na operação portuária, concorre para a prática da infração ou dela se beneficia; do jeito que está, 'intervir na operação portuária' vira uma conduta à parte. O manual ainda define infração como toda ação ou omissão, voluntária ou involuntária, que importe nas condutas I a III."
   },
   {
     "id": "15",
@@ -162,7 +162,7 @@
     "pagina": 6,
     "trecho": "t0005",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Incompleta: o art. 47 prevê cinco penas e a resposta lista só três. Faltam I – advertência e II – multa; as penas se aplicam separada ou cumulativamente, conforme a gravidade da infração (p. 7)."
   },
   {
     "id": "16",
@@ -172,7 +172,7 @@
     "secao": "",
     "pagina": 7,
     "trecho": "t0006",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -183,7 +183,7 @@
     "secao": "",
     "pagina": 7,
     "trecho": "t0006",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -194,7 +194,7 @@
     "secao": "",
     "pagina": 7,
     "trecho": "t0006",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -205,7 +205,7 @@
     "secao": "",
     "pagina": 7,
     "trecho": "t0006",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -217,7 +217,7 @@
     "pagina": 9,
     "trecho": "t0008",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Códigos errados para Belém e Vila do Conde: a resposta usou a numeração dos itens do manual (1.4.4.1 e 1.4.4.2). O correto (p. 9) é Belém: IN – 4103.01 e Vila do Conde: IN – 4104.01; Santarém (4105.01) está certo."
   },
   {
     "id": "21",
@@ -227,7 +227,7 @@
     "secao": "",
     "pagina": 9,
     "trecho": "t0008",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -239,7 +239,7 @@
     "pagina": 9,
     "trecho": "t0008",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Incompleta: falta a forma d) Por força do Plano Anual de Fiscalização (PAF) (p. 9). O manual diz 'três formas', mas lista quatro (a a d), e o item 2.1.1 (p. 12) também cita as quatro. A resposta ainda troca 'indícios de irregularidades' por 'indícios de infração'."
   },
   {
     "id": "23",
@@ -249,7 +249,7 @@
     "secao": "",
     "pagina": 9,
     "trecho": "t0009",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -260,7 +260,7 @@
     "secao": "",
     "pagina": 10,
     "trecho": "t0010",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -272,7 +272,7 @@
     "pagina": 12,
     "trecho": "t0012",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Fundamento errado: segundo o manual (p. 10), o ROIP substitui o ROP por exigência normativa da Resolução nº 53/2020 da CONPORTOS, não da Res. ANTAQ nº 3.259/2014. A última frase (substitui o ROP quando a irregularidade 'exige a lavratura de ROP de imediato') também não tem respaldo no manual. Sigla e emissor (Chefe da Segurança Portuária) estão corretos."
   },
   {
     "id": "26",
@@ -282,7 +282,7 @@
     "secao": "",
     "pagina": 11,
     "trecho": "t0011",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -293,7 +293,7 @@
     "secao": "",
     "pagina": 11,
     "trecho": "t0011",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -305,7 +305,7 @@
     "pagina": 21,
     "trecho": "t0027",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Prazo correto (72 horas da conclusão do procedimento), mas o fundamento está impreciso: o manual (Tabela 1, passo 10º, p. 13) indica o art. 34, inciso XXVIII, da Res. ANTAQ nº 75/2022. A Res. nº 3.259/2014 aparece na p. 12 como base para a ANTAQ decidir sobre o processo sancionador, não para o prazo."
   },
   {
     "id": "29",
@@ -316,7 +316,7 @@
     "pagina": 10,
     "trecho": "t0010",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Responde só o que a ANTAQ verifica, não o porquê. Segundo a p. 12 (e também a p. 16), se não ficar comprovada a efetividade da intimação, o procedimento da Autoridade Portuária não afasta a necessidade de a ANTAQ emitir NOCI; a verificação serve para afastar qualquer hipótese de nulidade processual."
   },
   {
     "id": "30",
@@ -326,7 +326,7 @@
     "secao": "",
     "pagina": 9,
     "trecho": "t0008",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -337,7 +337,7 @@
     "secao": "",
     "pagina": 12,
     "trecho": "t0013",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -348,7 +348,7 @@
     "secao": "",
     "pagina": 13,
     "trecho": "t0014",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -360,7 +360,7 @@
     "pagina": 14,
     "trecho": "t0015",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Errada: não lista as oito áreas; reproduz os objetivos e as competências da área 1 da Tabela 2. As oito áreas (Tabela 2, p. 14 a 16) são: 1) Operações e Logística Portuárias Marítimas e Terrestres; 2) Segurança Pública Portuária; 3) Segurança no Trânsito Interno; 4) Segurança e Saúde do Trabalho; 5) Meio Ambiente; 6) Infraestrutura Portuária e Patrimônio Público; 7) Contratos de Arrendamento e Cessão de Uso de Áreas ou Instalações Portuárias; 8) Procedimentos Administrativos."
   },
   {
     "id": "34",
@@ -371,7 +371,7 @@
     "pagina": 14,
     "trecho": "t0015",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Envolvidos corretos (agente, prático, lancha, rebocadores, amarradores), mas falta o 'como': o acompanhamento e a supervisão das manobras são feitos com utilização de rádio VHF (Tabela 2, área 1, p. 14)."
   },
   {
     "id": "35",
@@ -382,7 +382,7 @@
     "pagina": 14,
     "trecho": "t0016",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Incompleta e imprecisa: não separa portarias e cais, omite os procedimentos das portarias e atribui a averiguação de plotagem a 'veículos de carga'. Pela Tabela 2 (p. 15): nas portarias, acesso mediante crachás, autorizações de acesso ou web triagem (veículos de carga); no cais, pessoas mediante crachás (letras C e E) e veículos mediante autorização e averiguação de plotagem."
   },
   {
     "id": "36",
@@ -392,7 +392,7 @@
     "secao": "",
     "pagina": 4,
     "trecho": "t0002",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -404,7 +404,7 @@
     "pagina": 16,
     "trecho": "t0019",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Incompleta: dá a multa (até R$ 2.000,00, art. 33, I, da Res. ANTAQ nº 75/2022), mas omite que o valor é por veículo em situação irregular e não responde se cabe RIP. Na Tabela 3 (p. 17), a coluna RIP é 'NÃO' (prazo de 00 dia, porque a infração causa dano efetivo ou potencial)."
   },
   {
     "id": "38",
@@ -415,7 +415,7 @@
     "pagina": 17,
     "trecho": "t0021",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Incompleta e com texto corrompido ('Sem Não assegurar...'). A Tabela 3 (p. 18) traz três prazos: 01 dia para operador portuário em cais/píer público, com limpeza simples (varrição ou equivalente), feita de pronto se houver operação logo em seguida; 15 dias para as demais operações em áreas arrendadas ou privadas que demandem limpeza, acondicionamento ou destinação de resíduos, ou controle de pragas/vetores, sem necessidade de desincorporação de bens; 60 dias para esses mesmos casos quando houver necessidade de pedido de desincorporação de bens públicos."
   },
   {
     "id": "39",
@@ -425,7 +425,7 @@
     "secao": "",
     "pagina": 19,
     "trecho": "t0024",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -437,7 +437,7 @@
     "pagina": null,
     "trecho": null,
     "aprovada": false,
-    "observacao": ""
+    "observacao": "A resposta existe no manual: Tabela 3 (p. 20), cabe RIP (SIM), com prazo de 90 dias (dano moderado); a multa é de até R$ 100.000,00 (art. 33, XVII, da Res. ANTAQ nº 75/2022). Portanto a pergunta não é 'sem_resposta': o tipo deveria ser 'factual' e a página, 20. Se a ideia era ter uma pergunta sem resposta, ela precisa ser trocada por outra que de fato não esteja no manual."
   },
   {
     "id": "41",
@@ -448,7 +448,7 @@
     "pagina": 17,
     "trecho": "t0021",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Truncada ('Demanda lavratura de ROP de') e repete a descrição da infração em vez de explicar o procedimento. Pela Tabela 3 (p. 21): não cabe RIP; prazo de 0 dia (dano efetivo ou dano potencial grave); exige lavratura de ROP de imediato; multa de até R$ 500.000,00, aplicada pela ANTAQ (art. 33, XXXIII). Pela Tabela 1 (obs. do passo 1º, p. 13), o fiscal leva o caso à gerência/chefia, que segue os passos 8º a 10º: decisão da Diretoria e envio do ROP à ANTAQ no prazo de 72 horas da conclusão."
   },
   {
     "id": "42",
@@ -458,7 +458,7 @@
     "secao": "",
     "pagina": 22,
     "trecho": "t0030",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -469,7 +469,7 @@
     "secao": "",
     "pagina": 23,
     "trecho": "t0032",
-    "aprovada": false,
+    "aprovada": true,
     "observacao": ""
   },
   {
@@ -481,7 +481,7 @@
     "pagina": 25,
     "trecho": "t0037",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Valor correto (R$ 500.000,00), mas o dispositivo está errado: o manual (p. 25) cita o art. 36, inciso VI, da Res. ANTAQ nº 75/2022. O inciso V é o de falsear ou omitir dados para obter o Certificado de Operador Portuário (multa de até R$ 200.000,00)."
   },
   {
     "id": "45",
@@ -492,7 +492,7 @@
     "pagina": 2,
     "trecho": "t0001",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Conteúdo correto (as três etapas, p. 26), mas a resposta termina truncada ('Essas etapas são descritas na'). Basta remover a última frase."
   },
   {
     "id": "46",
@@ -503,7 +503,7 @@
     "pagina": 2,
     "trecho": "t0001",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Não informa o indicador: pela Tabela 4 (p. 27), para cada área o indicador é o 'Número de RIPs e ROPs emitidos relativos a esta área'. A resposta só lista as áreas e inclui '8. Procedimentos Administrativos', que não consta da Tabela 4 (ela tem 7 áreas). O alinhamento com o item '6 – Indicadores e Metas Estratégicas' do PEIN vigente está correto (p. 26)."
   },
   {
     "id": "47",
@@ -514,7 +514,7 @@
     "pagina": 26,
     "trecho": "t0038",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Conteúdo correto (Operador portuário, Arrendatário, Agência Marítima e Outro), mas a resposta começa com um cabeçalho espúrio ('Relator de Inspeção Portuária (RIP) (seção ..., p. 26)'), com erro de digitação e página errada: o Anexo I está na p. 29. Basta remover essa linha."
   },
   {
     "id": "48",
@@ -525,7 +525,7 @@
     "pagina": 30,
     "trecho": "t0039",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Incompleta: pelo item 3 do Anexo III (p. 31), os operadores são solidariamente responsáveis perante o usuário, a administração do porto e a ANTAQ; a resposta omite a ANTAQ. A referência 'p. 1' também está errada."
   },
   {
     "id": "49",
@@ -536,7 +536,7 @@
     "pagina": 30,
     "trecho": "t0039",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Cobre só o item 6 do Anexo III. Falta a primeira parte da pergunta (item 4, p. 31): ainda que executado por terceiros, o serviço permanece sob responsabilidade do operador portuário a que estiver afeta a atividade portuária."
   },
   {
     "id": "50",
@@ -547,6 +547,6 @@
     "pagina": 30,
     "trecho": "t0039",
     "aprovada": false,
-    "observacao": ""
+    "observacao": "Conteúdo correto (Anexo III, item 5), mas a linha 'Fonte: ANEXO III, item 5, p. 30' traz a página errada: o Anexo III está na p. 31 (rodapé do PDF e Sumário). Basta remover a linha ou corrigir a página."
   }
 ]
