@@ -13,9 +13,12 @@ Fluxo (Retriever-Reader):
     5. Resposta ................ qwen3:4b responde só com os trechos e termina com "(seção X, p. N)".
 
 Comandos:
-    python qa_manual.py indexar      # lê o manual.pdf e cria o índice (uma vez por versão do manual)
-    python qa_manual.py perguntar    # modo interativo: Pergunta: / Resposta:
+    python qa_manual.py              # modo interativo: Pergunta: / Resposta:
     python qa_manual.py responder    # perguntas.json -> resposta.json (respostas propostas para revisão)
+    python qa_manual.py indexar      # refaz o índice à força (normalmente não é preciso)
+
+O sistema cuida sozinho do resto: liga o Ollama se ele estiver desligado (e desliga ao terminar), baixa os modelos
+que faltarem e cria o índice na primeira vez (ou de novo quando o manual.pdf muda).
 
 As métricas ficam no arquivo separado ``avaliar.py``, que usa as funções daqui.
 """
@@ -23,11 +26,15 @@ As métricas ficam no arquivo separado ``avaliar.py``, que usa as funções daqu
 from __future__ import annotations
 
 import argparse
+import atexit
 import json
 import re
+import shutil
+import subprocess
 import sys
 import time
 import unicodedata
+import urllib.request
 from collections import Counter
 from pathlib import Path
 
@@ -116,8 +123,48 @@ class ErroUsuario(Exception):
 # ======================================================================================================================
 
 
+def ollama_ligado() -> bool:
+    """Diz se o servidor do Ollama está respondendo em ``OLLAMA_HOST``.
+
+    Saídas:
+        True se respondeu em até 2 segundos, senão False.
+    """
+    # Sem proxy: a pergunta vai direto para localhost.
+    abridor = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        with abridor.open(f"{OLLAMA_HOST}/api/version", timeout=2):
+            return True
+    except OSError:
+        return False
+
+
+def ligar_ollama() -> None:
+    """Liga o servidor do Ollama, se ele ainda não estiver ligado.
+
+    Quando é este programa que liga, o servidor é desligado sozinho ao final (atexit). Se o Ollama já estava ligado
+    (por exemplo, pelo aplicativo), nada muda.
+
+    Erros:
+        ErroUsuario se o Ollama não estiver instalado ou não ligar em 60 segundos.
+    """
+    if ollama_ligado():
+        return
+    if shutil.which("ollama") is None:
+        raise ErroUsuario("Ollama não instalado; veja a instalação no README (brew install ollama)")
+    print("Ligando o Ollama ...", file=sys.stderr)
+    # Roda "ollama serve" em segundo plano, sem misturar a saída dele com a do programa.
+    servidor = subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    atexit.register(servidor.terminate)
+    # Espera o servidor começar a responder.
+    for _ in range(60):
+        if ollama_ligado():
+            return
+        time.sleep(1)
+    raise ErroUsuario("o Ollama não ligou em 60 segundos; tente rodar `ollama serve` em outro terminal")
+
+
 def criar_cliente():
-    """Cria o cliente do Ollama local.
+    """Liga o Ollama (se preciso) e cria o cliente local.
 
     Entradas:
         nenhuma (usa ``OLLAMA_HOST``).
@@ -125,27 +172,28 @@ def criar_cliente():
         ``ollama.Client`` apontando para localhost, sem proxy (``trust_env=False``), para garantir que nenhum texto do
         manual seja enviado a outro endereço.
     Erros:
-        ErroUsuario se o pacote ``ollama`` não estiver instalado.
+        ErroUsuario se o pacote ``ollama`` não estiver instalado ou o Ollama não ligar.
     """
     # Importa aqui para o --help funcionar mesmo sem o pacote instalado.
     try:
         import ollama
     except ImportError:
-        raise ErroUsuario("pacote 'ollama' não instalado; rode: pip install ollama") from None
+        raise ErroUsuario("pacote 'ollama' não instalado; rode: pip install -r requirements.txt") from None
+    ligar_ollama()
     # Cliente local, com tempo limite generoso (modelos em CPU são lentos).
     return ollama.Client(host=OLLAMA_HOST, timeout=300, trust_env=False)
 
 
 def _chamar_ollama(funcao, modelo: str):
-    """Executa uma chamada ao Ollama traduzindo os erros comuns em mensagens claras.
+    """Executa uma chamada ao Ollama; se o modelo não estiver baixado, baixa e tenta de novo.
 
     Entradas:
         funcao: função sem argumentos que faz a chamada.
-        modelo: nome do modelo usado (para a mensagem de modelo ausente).
+        modelo: nome do modelo usado.
     Saídas:
         o que a chamada devolver.
     Erros:
-        ErroUsuario se o Ollama estiver desligado ou o modelo não estiver baixado.
+        ErroUsuario se o Ollama estiver desligado ou o modelo não existir no catálogo do Ollama.
     """
     import ollama
 
@@ -155,10 +203,15 @@ def _chamar_ollama(funcao, modelo: str):
         # O pacote ollama converte falha de conexão em ConnectionError.
         raise ErroUsuario(f"Ollama não respondeu em {OLLAMA_HOST}; abra o Ollama ou rode `ollama serve`") from None
     except ollama.ResponseError as erro:
-        # 404 = modelo não baixado.
-        if erro.status_code == 404:
-            raise ErroUsuario(f"modelo {modelo} não encontrado; rode `ollama pull {modelo}`") from None
-        raise
+        # 404 = modelo não baixado. Baixa uma vez só (é download do modelo; nenhum texto do manual é enviado).
+        if erro.status_code != 404:
+            raise
+    print(f"Baixando o modelo {modelo} (só na primeira vez; pode demorar) ...", file=sys.stderr)
+    try:
+        ollama.Client(host=OLLAMA_HOST, trust_env=False).pull(modelo)
+    except ollama.ResponseError:
+        raise ErroUsuario(f"modelo {modelo} não existe no Ollama; confira o nome") from None
+    return funcao()
 
 
 def gerar_embeddings(cliente, textos: list[str]):
@@ -453,17 +506,25 @@ def indexar(caminho_pdf: Path) -> int:
 
 
 def carregar_indice() -> Indice:
-    """Lê o índice gravado pelo comando ``indexar``.
+    """Lê o índice gravado em ``indice/``, criando-o antes se ainda não existir ou se o manual.pdf mudou.
 
     Saídas:
         objeto ``Indice`` pronto para buscas.
     Erros:
-        ErroUsuario se o índice não existir.
+        ErroUsuario se não houver índice nem manual.pdf para criá-lo.
     """
     import numpy as np
 
-    if not ARQ_TRECHOS.exists() or not ARQ_VETORES.exists():
-        raise ErroUsuario("índice não encontrado; rode antes: python qa_manual.py indexar")
+    existe = ARQ_TRECHOS.exists() and ARQ_VETORES.exists()
+    # Manual mais novo que o índice = o manual foi trocado; o índice precisa ser refeito.
+    desatualizado = existe and ARQ_MANUAL.exists() and ARQ_MANUAL.stat().st_mtime > ARQ_VETORES.stat().st_mtime
+    if not existe or desatualizado:
+        if not ARQ_MANUAL.exists():
+            raise ErroUsuario(
+                f"manual não encontrado; coloque o arquivo {ARQ_MANUAL.name} ao lado de {Path(__file__).name}"
+            )
+        print("Indexando o manual (só na primeira vez ou quando o manual muda) ...", file=sys.stderr)
+        print(f"Índice criado com {indexar(ARQ_MANUAL)} trechos.", file=sys.stderr)
     trechos = json.loads(ARQ_TRECHOS.read_text(encoding="utf-8"))
     return Indice(trechos, np.load(ARQ_VETORES))
 
@@ -826,7 +887,9 @@ def main(argv: list[str] | None = None) -> int:
         código de saída: 0 sucesso, 2 erro de uso, 130 interrompido.
     """
     parser = argparse.ArgumentParser(prog="qa_manual.py", description="Perguntas e respostas sobre o manual.")
-    comandos = parser.add_subparsers(dest="comando", required=True)
+    # Sem comando, abre o modo interativo (perguntar).
+    parser.set_defaults(funcao=comando_perguntar, pergunta=None, modo="S3", modelo=MODELO_LEITOR)
+    comandos = parser.add_subparsers(dest="comando")
 
     p = comandos.add_parser("indexar", help="lê o manual.pdf e cria o índice")
     p.add_argument("--manual", default=str(ARQ_MANUAL), help="caminho do PDF (padrão: manual.pdf ao lado do .py)")

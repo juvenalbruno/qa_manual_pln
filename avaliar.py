@@ -7,20 +7,28 @@ combinação calcula:
 
     em            Exact Match: a resposta normalizada é igual ao gabarito (0 ou 1).
     f1            F1 de palavras entre resposta e gabarito (0 a 1), estilo SQuAD.
+    bertscore_f1  semelhança de sentido entre resposta e gabarito (0 a 1), medida pelo BERTimbau; aceita
+                  respostas certas escritas com outras palavras, que o EM e o F1 punem.
     recall_at_5   o trecho de onde saiu o gabarito está entre os 5 trechos buscados (só perguntas com resposta).
     mrr_at_5      1 / posição desse trecho na busca (0 se ausente).
     abst_correta  fração das perguntas sem resposta em que o sistema disse "Não encontrado no manual".
     abst_indevida fração das perguntas com resposta em que o sistema disse "Não encontrado no manual".
     citacao_valida fração das respostas (não abstidas) cuja citação aponta para um trecho buscado.
     latencia_mediana_s tempo mediano por pergunta.
+    perplexidade  o quanto o modelo leitor "se surpreende" com o texto do manual (quanto menor, mais familiar);
+                  calculada pelo llama-perplexity do llama.cpp, uma vez por modelo (igual para todos os modos).
 
 Uso:
     python avaliar.py                                  # resposta.json, S0 a S3, leitor qwen3:4b
     python avaliar.py --modos S0 S3 --limite 30        # experimento mínimo
     python avaliar.py --modelos qwen3:4b outro:modelo  # compara leitores
+    python avaliar.py --sem-bertscore                  # pula o BERTScore (mais rápido)
+    python avaliar.py --sem-perplexidade               # pula a perplexidade
+    python avaliar.py --llama-perplexity /caminho/llama-perplexity   # se o llama.cpp não estiver em ~/llama.cpp
 
 Saída em ``resultados/<data-hora>/``: ``respostas.jsonl`` (cada resposta), ``metrics.csv`` (uma linha por modo e
-modelo) e ``grafico.png`` (se o matplotlib estiver instalado).
+modelo), ``grafico.png`` e ``grafico_perplexidade.png`` (se o matplotlib estiver instalado) e ``ppl_texto.txt`` (o
+texto usado na perplexidade).
 """
 
 from __future__ import annotations
@@ -28,9 +36,12 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import random
 import re
+import shutil
 import statistics
 import string
+import subprocess
 import sys
 from collections import Counter
 from datetime import datetime
@@ -167,9 +178,16 @@ def resumir(registros: list[dict]) -> dict:
         # Quando o sistema se absteve numa pergunta com resposta, EM e F1 valem 0.
         "em": media([0 if r["absteve"] else exact_match(r["resposta"], r["referencia"]) for r in com_resposta]),
         "f1": media([0.0 if r["absteve"] else f1(r["resposta"], r["referencia"]) for r in com_resposta]),
+        "bertscore_f1": media([r["bertscore"] for r in com_resposta if "bertscore" in r]),
         "recall_at_5": media([int(bool(set(r["trechos"]) & set(r["evidencia"]))) for r in com_busca]),
         "mrr_at_5": media(
-            [next((1 / pos for pos, t in enumerate(r["trechos"], 1) if t in r["evidencia"]), 0.0) for r in com_busca]
+            [
+                next(
+                    (1 / pos for pos, t in enumerate(r["trechos"], 1) if t in r["evidencia"]),
+                    0.0,
+                )
+                for r in com_busca
+            ]
         ),
         "abst_correta": media([int(r["absteve"]) for r in sem_resposta]),
         "abst_indevida": media([int(r["absteve"]) for r in com_resposta]),
@@ -178,12 +196,210 @@ def resumir(registros: list[dict]) -> dict:
     }
 
 
+# Modelo BERT em português usado pelo BERTScore e a camada de onde saem as representações (recomendação do
+# bert-score para modelos BERT-base).
+MODELO_BERTSCORE = "neuralmind/bert-base-portuguese-cased"
+CAMADAS_BERTSCORE = 9
+
+
+def criar_bertscore():
+    """Carrega o BERTScore com o BERTimbau, uma vez só, para todas as respostas.
+
+    Entradas:
+        nenhuma.
+    Saídas:
+        objeto ``BERTScorer`` pronto para comparar respostas, ou None se o pacote bert-score não estiver instalado.
+        Na primeira vez o BERTimbau (~430 MB) é baixado do Hugging Face: é download de modelo, nenhum texto do
+        manual é enviado.
+    """
+    try:
+        from bert_score import BERTScorer
+    except ImportError:
+        print(
+            "aviso: bert-score não instalado; a coluna bertscore_f1 ficará vazia (pip install bert-score)",
+            file=sys.stderr,
+        )
+        return None
+    # Roda em CPU e sem reescala pela linha de base (valores brutos de 0 a 1).
+    avaliador = BERTScorer(
+        model_type=MODELO_BERTSCORE,
+        num_layers=CAMADAS_BERTSCORE,
+        lang="pt",
+        device="cpu",
+    )
+    # O tokenizador do BERTimbau declara um tamanho máximo gigante, que quebra o truncamento do bert-score;
+    # limita ao tamanho real do BERT (512 tokens).
+    avaliador._tokenizer.model_max_length = 512
+    return avaliador
+
+
+def calcular_bertscore(registros: list[dict], avaliador) -> None:
+    """Acrescenta o campo ``bertscore`` a cada resposta de pergunta com resposta.
+
+    Entradas:
+        registros: respostas de um modo e modelo (com a referência do gabarito).
+        avaliador: saída de ``criar_bertscore`` (None = não calcula).
+    Saídas:
+        nenhuma; altera os registros. Resposta abstida vale 0; perguntas sem resposta não recebem o campo.
+    """
+    if avaliador is None:
+        return
+    # Compara de uma vez só (em lote) as respostas não abstidas com as referências, sem a citação de fonte.
+    alvos = [r for r in registros if not r["sem_resposta"] and not r["absteve"]]
+    if alvos:
+        candidatas = [" ".join(normalizar_para_bertscore(r["resposta"])) or "-" for r in alvos]
+        referencias = [" ".join(normalizar_para_bertscore(r["referencia"])) or "-" for r in alvos]
+        _, _, f1s = avaliador.score(candidatas, referencias)
+        for r, valor in zip(alvos, f1s.tolist(), strict=True):
+            r["bertscore"] = round(valor, 4)
+    # Abstenção numa pergunta com resposta conta como 0, como no EM e no F1.
+    for r in registros:
+        if not r["sem_resposta"] and r["absteve"]:
+            r["bertscore"] = 0.0
+
+
+def normalizar_para_bertscore(texto: str) -> list[str]:
+    """Tira só a citação de fonte (o BERTScore compara o texto como está, com artigos e pontuação).
+
+    Entradas:
+        texto: resposta ou referência.
+    Saídas:
+        lista de palavras sem a citação "(seção X, p. N)".
+    """
+    return re.sub(r"\(?\s*se[çc][ãa]o[^()]*\)?", " ", texto, flags=re.I).split()
+
+
+# ======================================================================================================================
+# PERPLEXIDADE
+# ======================================================================================================================
+
+# Onde o README manda compilar o llama.cpp.
+LLAMA_PERPLEXITY = Path("~/llama.cpp/build/bin/llama-perplexity").expanduser()
+# Quantos trechos do manual entram no texto medido e a semente do sorteio (mesmo texto a cada execução).
+N_TRECHOS_PPL = 30
+SEMENTE_PPL = 42
+# Janela de contexto do cálculo. O texto precisa ter pelo menos o dobro disso em tokens.
+CONTEXTO_PPL = 2048
+
+
+def montar_texto_ppl(indice: qa.Indice, destino: Path) -> Path:
+    """Sorteia trechos do manual e grava o texto usado na perplexidade.
+
+    Entradas:
+        indice: índice do manual.
+        destino: arquivo de texto a gravar (fica em resultados/, que não vai para o git).
+    Saídas:
+        o caminho do arquivo gravado (trechos separados por linha em branco).
+    """
+    # Sorteio com semente fixa e em ordem de id, para o texto ser sempre o mesmo.
+    escolhidos = random.Random(SEMENTE_PPL).sample(indice.trechos, min(N_TRECHOS_PPL, len(indice.trechos)))
+    escolhidos.sort(key=lambda t: t["id"])
+    destino.write_text("\n\n".join(t["texto"] for t in escolhidos) + "\n", encoding="utf-8")
+    return destino
+
+
+def gguf_do_ollama(modelo: str) -> Path:
+    """Acha o arquivo GGUF que o Ollama usa para um modelo.
+
+    Entradas:
+        modelo: nome no Ollama (ex.: qwen3:4b).
+    Saídas:
+        caminho do arquivo (o "blob" do Ollama é um GGUF válido para o llama.cpp).
+    Erros:
+        ErroUsuario se o comando ollama não existir ou o modelo não estiver instalado.
+    """
+    if shutil.which("ollama") is None:
+        raise qa.ErroUsuario("comando ollama não encontrado; informe o arquivo com --gguf modelo=arquivo.gguf")
+    # O Modelfile mostrado pelo Ollama tem uma linha "FROM /caminho/do/blob".
+    comando = ["ollama", "show", modelo, "--modelfile"]
+    saida = subprocess.run(comando, capture_output=True, text=True, check=False)
+    if saida.returncode != 0:
+        # Modelo ainda não baixado: baixa e tenta de novo.
+        subprocess.run(["ollama", "pull", modelo], check=False)
+        saida = subprocess.run(comando, capture_output=True, text=True, check=False)
+    if saida.returncode != 0:
+        raise qa.ErroUsuario(f"modelo {modelo} não encontrado no Ollama")
+    for caminho in re.findall(r"^FROM\s+(\S.*)$", saida.stdout, re.M):
+        if Path(caminho.strip()).is_file():
+            return Path(caminho.strip())
+    raise qa.ErroUsuario(f"não encontrei o arquivo GGUF de {modelo} na saída de `ollama show`")
+
+
+def medir_perplexidade(binario: Path, gguf: Path, texto: Path) -> float:
+    """Roda o llama-perplexity e devolve a perplexidade final.
+
+    Entradas:
+        binario: caminho do executável llama-perplexity.
+        gguf: arquivo do modelo.
+        texto: arquivo de texto a medir.
+    Saídas:
+        valor da perplexidade (quanto menor, melhor).
+    Erros:
+        ErroUsuario se a execução falhar (por exemplo, texto curto demais para o contexto).
+    """
+    comando = [str(binario), "-m", str(gguf), "-f", str(texto), "-c", str(CONTEXTO_PPL)]
+    saida = subprocess.run(comando, capture_output=True, text=True, check=False)
+    # O llama.cpp termina com a linha "Final estimate: PPL = 7.1234 +/- ...".
+    resultado = re.search(r"Final estimate:\s*PPL\s*=\s*([0-9.]+)", saida.stdout + saida.stderr)
+    if saida.returncode != 0 or not resultado:
+        raise qa.ErroUsuario(
+            f"llama-perplexity falhou para {gguf.name}; o texto precisa de pelo menos {2 * CONTEXTO_PPL} tokens"
+        )
+    return float(resultado.group(1))
+
+
+def calcular_perplexidades(
+    modelos: list[str],
+    indice: qa.Indice,
+    binario: Path,
+    ggufs: dict[str, str],
+    pasta: Path,
+) -> dict[str, float | None]:
+    """Mede a perplexidade de cada modelo leitor sobre o mesmo texto do manual.
+
+    Entradas:
+        modelos: modelos leitores da avaliação.
+        indice: índice do manual (fonte do texto).
+        binario: caminho do llama-perplexity.
+        ggufs: arquivos GGUF informados à mão ({modelo: caminho}); os demais vêm do Ollama.
+        pasta: pasta da execução (onde fica o ppl_texto.txt).
+    Saídas:
+        {modelo: perplexidade}; None quando não deu para medir (com aviso no terminal, sem parar a avaliação).
+    """
+    if not binario.is_file():
+        print(
+            f"aviso: llama-perplexity não encontrado em {binario}; a coluna perplexidade ficará vazia "
+            "(veja a compilação do llama.cpp no README ou use --llama-perplexity)",
+            file=sys.stderr,
+        )
+        return {}
+    texto = montar_texto_ppl(indice, pasta / "ppl_texto.txt")
+    resultado = {}
+    for modelo in modelos:
+        print(f"  perplexidade de {modelo} ...", file=sys.stderr)
+        try:
+            gguf = Path(ggufs[modelo]).expanduser() if modelo in ggufs else gguf_do_ollama(modelo)
+            resultado[modelo] = round(medir_perplexidade(binario, gguf, texto), 3)
+        except qa.ErroUsuario as erro:
+            # Uma falha aqui não invalida as outras métricas: avisa e segue.
+            print(f"aviso: {erro}", file=sys.stderr)
+            resultado[modelo] = None
+    return resultado
+
+
 # ======================================================================================================================
 # EXECUÇÃO
 # ======================================================================================================================
 
 
-def avaliar(gabarito: list[dict], indice: qa.Indice, modos: list[str], modelos: list[str], pasta: Path) -> list[dict]:
+def avaliar(
+    gabarito: list[dict],
+    indice: qa.Indice,
+    modos: list[str],
+    modelos: list[str],
+    pasta: Path,
+    avaliador=None,
+) -> list[dict]:
     """Roda todas as perguntas em todos os modos e modelos e calcula as métricas.
 
     Entradas:
@@ -192,6 +408,7 @@ def avaliar(gabarito: list[dict], indice: qa.Indice, modos: list[str], modelos: 
         modos: lista entre S0, S1, S2 e S3.
         modelos: modelos leitores a comparar.
         pasta: onde gravar respostas.jsonl.
+        avaliador: BERTScore carregado (None = sem BERTScore).
     Saídas:
         uma linha de métricas por (modo, modelo).
     """
@@ -205,7 +422,10 @@ def avaliar(gabarito: list[dict], indice: qa.Indice, modos: list[str], modelos: 
                 registros = []
                 for item in gabarito:
                     feitos += 1
-                    print(f"  [{feitos}/{total}] {nome_modo} {modelo} pergunta {item['id']}", file=sys.stderr)
+                    print(
+                        f"  [{feitos}/{total}] {nome_modo} {modelo} pergunta {item['id']}",
+                        file=sys.stderr,
+                    )
                     # Responde com o modo e o modelo da vez e guarda junto o gabarito da pergunta.
                     resultado = qa.responder(item["pergunta"], indice, cliente, qa.MODOS[nome_modo], modelo)
                     registro = {
@@ -216,15 +436,21 @@ def avaliar(gabarito: list[dict], indice: qa.Indice, modos: list[str], modelos: 
                         **resultado,
                     }
                     registros.append(registro)
-                    # Grava cada resposta assim que sai (útil para conferir depois).
+                # BERTScore em lote para as respostas deste modo e modelo.
+                calcular_bertscore(registros, avaliador)
+                # Grava as respostas deste modo e modelo (com o BERTScore de cada uma).
+                for registro in registros:
                     arquivo.write(json.dumps(registro, ensure_ascii=False) + "\n")
-                    arquivo.flush()
+                arquivo.flush()
                 linhas.append({"modo": nome_modo, "modelo": modelo, **resumir(registros)})
     return linhas
 
 
 def gravar_metricas(linhas: list[dict], pasta: Path) -> None:
-    """Grava metrics.csv e, se o matplotlib existir, um gráfico de barras com EM, F1 e Recall@5 por modo.
+    """Grava metrics.csv e, se o matplotlib existir, os gráficos.
+
+    grafico.png tem EM, F1, BERTScore e Recall@5 por modo e modelo; grafico_perplexidade.png, a perplexidade de cada
+    modelo (só se ela foi calculada).
 
     Entradas:
         linhas: saída de ``avaliar``.
@@ -241,14 +467,19 @@ def gravar_metricas(linhas: list[dict], pasta: Path) -> None:
         import matplotlib.pyplot as plt
     except ImportError:
         return
-    # Um grupo de barras por linha (modo + modelo), com EM, F1 e Recall@5.
+    # Um grupo de barras por linha (modo + modelo), com EM, F1, BERTScore e Recall@5.
     rotulos = [f"{linha['modo']}\n{linha['modelo']}" for linha in linhas]
-    metricas = ["em", "f1", "recall_at_5"]
-    largura = 0.25
+    metricas = ["em", "f1", "bertscore_f1", "recall_at_5"]
+    largura = 0.2
     figura, eixo = plt.subplots(figsize=(max(6, 1.4 * len(linhas)), 4))
     for n, metrica in enumerate(metricas):
         valores = [linha[metrica] or 0 for linha in linhas]
-        eixo.bar([i + (n - 1) * largura for i in range(len(linhas))], valores, width=largura, label=metrica)
+        eixo.bar(
+            [i + (n - 1.5) * largura for i in range(len(linhas))],
+            valores,
+            width=largura,
+            label=metrica,
+        )
     eixo.set_xticks(range(len(linhas)), rotulos)
     eixo.set_ylim(0, 1)
     eixo.legend()
@@ -256,6 +487,17 @@ def gravar_metricas(linhas: list[dict], pasta: Path) -> None:
     figura.tight_layout()
     figura.savefig(pasta / "grafico.png", dpi=150)
     plt.close(figura)
+    # Perplexidade em gráfico separado: não fica entre 0 e 1 e é uma por modelo (não por modo).
+    perplexidades = {linha["modelo"]: linha.get("perplexidade") for linha in linhas}
+    perplexidades = {modelo: valor for modelo, valor in perplexidades.items() if valor is not None}
+    if perplexidades:
+        figura, eixo = plt.subplots(figsize=(max(4, 1.4 * len(perplexidades)), 4))
+        eixo.bar(list(perplexidades), list(perplexidades.values()))
+        eixo.set_ylabel("perplexidade (menor = melhor)")
+        eixo.set_title("Perplexidade sobre o texto do manual")
+        figura.tight_layout()
+        figura.savefig(pasta / "grafico_perplexidade.png", dpi=150)
+        plt.close(figura)
 
 
 def imprimir_tabela(linhas: list[dict]) -> None:
@@ -275,9 +517,33 @@ def main(argv: list[str] | None = None) -> int:
     """
     parser = argparse.ArgumentParser(prog="avaliar.py", description="Métricas do sistema de QA.")
     parser.add_argument("--respostas", default=str(qa.ARQ_RESPOSTAS), help="resposta.json revisado")
-    parser.add_argument("--modos", nargs="+", choices=qa.MODOS, default=list(qa.MODOS), help="padrão: S0 S1 S2 S3")
+    parser.add_argument(
+        "--modos",
+        nargs="+",
+        choices=qa.MODOS,
+        default=list(qa.MODOS),
+        help="padrão: S0 S1 S2 S3",
+    )
     parser.add_argument("--modelos", nargs="+", default=[qa.MODELO_LEITOR], help="leitores a comparar")
     parser.add_argument("--limite", type=int, help="usa só as N primeiras perguntas aprovadas")
+    parser.add_argument(
+        "--sem-bertscore",
+        action="store_true",
+        help="não calcula o BERTScore (mais rápido)",
+    )
+    parser.add_argument("--sem-perplexidade", action="store_true", help="não calcula a perplexidade")
+    parser.add_argument(
+        "--llama-perplexity",
+        default=str(LLAMA_PERPLEXITY),
+        help=f"executável do llama.cpp (padrão: {LLAMA_PERPLEXITY})",
+    )
+    parser.add_argument(
+        "--gguf",
+        nargs="+",
+        default=[],
+        metavar="MODELO=ARQUIVO",
+        help="GGUF de um modelo, se não vier do Ollama",
+    )
     args = parser.parse_args(argv)
     try:
         indice = qa.carregar_indice()
@@ -286,7 +552,16 @@ def main(argv: list[str] | None = None) -> int:
         pasta = qa.RAIZ / "resultados" / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         pasta.mkdir(parents=True)
         print(f"Avaliando {len(gabarito)} perguntas aprovadas ...", file=sys.stderr)
-        linhas = avaliar(gabarito, indice, args.modos, args.modelos, pasta)
+        # Carrega o BERTScore antes de começar (o download do BERTimbau acontece só na primeira vez).
+        avaliador = None if args.sem_bertscore else criar_bertscore()
+        linhas = avaliar(gabarito, indice, args.modos, args.modelos, pasta, avaliador)
+        # Perplexidade: uma por modelo, repetida em todas as linhas (modos) desse modelo.
+        if not args.sem_perplexidade:
+            ggufs = dict(item.split("=", 1) for item in args.gguf)
+            binario = Path(args.llama_perplexity).expanduser()
+            perplexidades = calcular_perplexidades(args.modelos, indice, binario, ggufs, pasta)
+            for linha in linhas:
+                linha["perplexidade"] = perplexidades.get(linha["modelo"])
         gravar_metricas(linhas, pasta)
         print()
         imprimir_tabela(linhas)

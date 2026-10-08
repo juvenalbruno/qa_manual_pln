@@ -10,53 +10,56 @@ Tudo roda na sua máquina: o manual não é enviado para nenhum serviço externo
 
 | Arquivo | Para que serve |
 |---|---|
-| `qa_manual.py` | O sistema de QA: indexa o manual, responde perguntas e gera respostas para revisão |
-| `avaliar.py` | Métricas (separado do sistema principal) |
+| `qa_manual.py` | O sistema de QA: responde perguntas sobre o manual e gera respostas para revisão |
+| `avaliar.py` | Avaliação (separada do sistema principal): EM, F1, BERTScore, Recall@5, perplexidade e outras |
+| `requirements.txt` | Bibliotecas Python |
 | `manual.pdf` | O manual (você coloca aqui; não vai para o git) |
 | `perguntas.json` | As perguntas de avaliação (você escreve; não vai para o git) |
 
-## Instalação (macOS)
+## Instalação (macOS, uma vez)
 
 ```bash
-# 1. Python 3.11 (com Homebrew)
-brew install python@3.11
-
-# 2. Ambiente virtual e bibliotecas
+brew install python@3.11 ollama
 python3.11 -m venv .venv
 source .venv/bin/activate
-pip install pymupdf==1.28.2 bm25s==0.3.11 numpy==2.4.6 ollama==0.6.3 matplotlib==3.11.2
-
-# 3. Ollama (https://ollama.com/download) e os modelos
-brew install ollama          # ou baixe o aplicativo no site
-ollama serve                 # em outro terminal (o aplicativo já faz isso sozinho)
-ollama pull qwen3:4b         # leitor: escreve as respostas
-ollama pull bge-m3           # embeddings: busca por significado
-ollama pull llama3.2:3b      # propõe as respostas do perguntas.json para revisão
+pip install -r requirements.txt
 ```
 
-Em cada terminal novo, ative o ambiente com `source .venv/bin/activate`. No Linux, troque o `brew` pelo gerenciador
-de pacotes e instale o Ollama com `curl -fsSL https://ollama.com/install.sh | sh`.
+Não é preciso ligar o Ollama nem baixar modelos à mão: o programa liga o Ollama quando ele estiver desligado (e
+desliga ao terminar) e baixa na primeira vez os modelos que faltarem (`qwen3:4b`, `bge-m3`, `llama3.2:3b`; uns 6 GB).
+O BERTimbau usado pelo BERTScore (~430 MB) também é baixado na primeira avaliação. São downloads de modelos: nenhum
+texto do manual sai da máquina.
+
+Só a perplexidade precisa de mais um passo, o llama.cpp (sem ele, o `avaliar.py` roda normalmente e deixa a coluna
+`perplexidade` vazia):
+
+```bash
+brew install cmake
+git clone --depth 1 https://github.com/ggml-org/llama.cpp ~/llama.cpp
+cmake -S ~/llama.cpp -B ~/llama.cpp/build -DGGML_CUDA=OFF
+cmake --build ~/llama.cpp/build --target llama-perplexity -j
+```
+
+Em cada terminal novo, ative o ambiente com `source .venv/bin/activate`. No Linux, instale o Ollama com
+`curl -fsSL https://ollama.com/install.sh | sh`.
 
 Não deixe a pasta do projeto na Mesa ou em Documentos se o iCloud estiver sincronizando essas pastas (nem em
 Dropbox, OneDrive ou Google Drive): o manual e o índice iriam para a nuvem.
 
 ## Uso
 
-### 1. Indexar o manual (uma vez)
-
-Coloque o `manual.pdf` ao lado do `qa_manual.py` e rode:
+São três comandos:
 
 ```bash
-python qa_manual.py indexar
+python qa_manual.py              # 1. fazer perguntas
+python qa_manual.py responder    # 2. perguntas.json -> resposta.json (para revisar)
+python avaliar.py                # 3. métricas
 ```
 
-Cria a pasta `indice/`. Rode de novo só se o manual mudar.
+### 1. Fazer perguntas
 
-### 2. Fazer perguntas
-
-```bash
-python qa_manual.py perguntar
-```
+Coloque o `manual.pdf` ao lado do `qa_manual.py` e rode `python qa_manual.py`. Na primeira vez (e sempre que o
+`manual.pdf` mudar) ele indexa o manual antes, o que leva alguns minutos.
 
 ```
 Pergunta:
@@ -66,9 +69,9 @@ Resposta: A carga é liberada em até 48 horas após a atracação (seção 4.2,
 Pergunta:
 ```
 
-Linha vazia ou `sair` encerra. Para uma pergunta só: `python qa_manual.py perguntar --pergunta "..."`.
+Linha vazia ou `sair` encerra.
 
-### 3. Avaliar
+### 2. Montar o gabarito
 
 **a) Escreva o `perguntas.json`** ao lado do `qa_manual.py` (de 50 a 100 perguntas; inclua algumas que o manual
 não responde, para medir se o sistema sabe dizer que não sabe):
@@ -80,14 +83,9 @@ não responde, para medir se o sistema sabe dizer que não sabe):
 ]
 ```
 
-**b) Gere as respostas propostas:**
-
-```bash
-python qa_manual.py responder
-```
-
-Cria o `resposta.json`. As respostas propostas são escritas pelo `llama3.2:3b`, que não é o leitor avaliado: assim o
-leitor não é comparado com as próprias respostas.
+**b) Rode `python qa_manual.py responder`.** Cria o `resposta.json` com uma resposta proposta para cada pergunta,
+escrita pelo `llama3.2:3b` (que não é o leitor avaliado: assim o leitor não é comparado com as próprias respostas).
+Ele não sobrescreve um `resposta.json` existente (use `--forcar` para gerar de novo).
 
 **c) Revise o `resposta.json`.** Para cada item:
 
@@ -110,47 +108,57 @@ leitor não é comparado com as próprias respostas.
 - Pergunta que o manual não responde: `"resposta": "Não encontrado no manual"`, `"tipo": "sem_resposta"`, `true`.
 - Itens com `false` são ignorados na avaliação.
 
-O `responder` não sobrescreve um `resposta.json` existente (use `--forcar` se quiser gerar de novo).
-
-**d) Calcule as métricas:**
+### 3. Avaliar
 
 ```bash
-python avaliar.py                          # S0 a S3 com o leitor qwen3:4b
-python avaliar.py --modos S0 S3 --limite 30  # versão rápida
+python avaliar.py
 ```
 
-Modos de busca comparados: **S0** sem busca (o modelo responde sozinho), **S1** BM25 (palavras), **S2** denso
-(embeddings), **S3** híbrido (BM25 + denso fundidos por RRF). Para comparar outro leitor:
-`python avaliar.py --modelos qwen3:4b outro-modelo`.
-
-Os resultados ficam em `resultados/<data-hora>/`:
+Roda cada pergunta aprovada nos quatro modos de busca, **S0** sem busca (o modelo responde sozinho), **S1** BM25
+(palavras), **S2** denso (embeddings) e **S3** híbrido (BM25 + denso fundidos por RRF), e mede a perplexidade do
+leitor sobre o texto do manual. Os resultados ficam em `resultados/<data-hora>/`:
 
 | Arquivo | Conteúdo |
 |---|---|
-| `metrics.csv` | Uma linha por modo e modelo |
-| `respostas.jsonl` | Cada resposta, com os trechos buscados |
-| `grafico.png` | EM, F1 e Recall@5 por modo |
+| `metrics.csv` | A tabela de métricas: uma linha por modo de busca (e por modelo, se comparar mais de um) |
+| `grafico.png` | Barras de EM, F1, BERTScore e Recall@5 para cada modo |
+| `grafico_perplexidade.png` | Barra da perplexidade de cada modelo |
+| `respostas.jsonl` | Cada resposta dada, com o gabarito, os trechos buscados e o BERTScore |
+| `ppl_texto.txt` | Os 30 trechos do manual usados na perplexidade |
+
+A mesma tabela do `metrics.csv` aparece no terminal ao final.
 
 | Métrica | O que mede |
 |---|---|
 | `em` | Resposta igual ao gabarito (após normalizar) |
 | `f1` | Sobreposição de palavras com o gabarito (0 a 1) |
+| `bertscore_f1` | Semelhança de sentido com o gabarito pelo BERTimbau (0 a 1); aceita respostas certas com outras palavras |
 | `recall_at_5` | O trecho com a resposta está entre os 5 buscados |
 | `mrr_at_5` | 1 / posição desse trecho na busca |
 | `abst_correta` | Nas perguntas sem resposta, quantas vezes o sistema disse "Não encontrado no manual" |
 | `abst_indevida` | Nas perguntas com resposta, quantas vezes ele disse "Não encontrado" sem necessidade |
 | `citacao_valida` | A seção e a página citadas batem com um trecho buscado |
 | `latencia_mediana_s` | Tempo mediano por pergunta |
+| `perplexidade` | Quanto o modelo "se surpreende" com o texto do manual (menor = mais familiar); uma por modelo |
+
+Opções, se precisar:
+
+| Opção | Para quê |
+|---|---|
+| `--modos S0 S3 --limite 30` | Versão rápida: só dois modos e 30 perguntas |
+| `--modelos qwen3:4b outro-modelo` | Compara leitores |
+| `--sem-bertscore`, `--sem-perplexidade` | Pula essas métricas |
+| `--llama-perplexity caminho` | Se o llama.cpp não estiver em `~/llama.cpp` |
 
 ## Problemas comuns
 
 | Mensagem | O que fazer |
 |---|---|
-| `Ollama não respondeu` | Abra o aplicativo do Ollama ou rode `ollama serve` |
-| `modelo ... não encontrado` | `ollama pull <modelo>` |
-| `índice não encontrado` | `python qa_manual.py indexar` |
+| `Ollama não instalado` | `brew install ollama` |
+| `manual não encontrado` | Coloque o `manual.pdf` ao lado do `qa_manual.py` |
 | `PDF sem texto selecionável` | O PDF é escaneado: rode OCR antes (ex.: `ocrmypdf manual.pdf manual_ocr.pdf`) |
 | `nenhuma resposta aprovada` | Marque `"aprovada": true` no `resposta.json` |
+| `llama-perplexity não encontrado` | Compile o llama.cpp (instalação) ou use `--llama-perplexity` |
 
 ## Referências
 
@@ -159,3 +167,4 @@ Os resultados ficam em `resultados/<data-hora>/`:
 - Robertson e Zaragoza (2009). The Probabilistic Relevance Framework: BM25 and Beyond.
 - Cormack, Clarke e Büttcher (2009). Reciprocal Rank Fusion.
 - Rajpurkar et al. (2016). SQuAD (EM e F1).
+- Zhang et al. (2020). BERTScore: Evaluating Text Generation with BERT.

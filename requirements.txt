@@ -1,0 +1,11 @@
+# Sistema de QA (qa_manual.py)
+pymupdf==1.28.2
+bm25s==0.3.11
+numpy==2.4.6
+ollama==0.6.3
+
+# Avaliação (avaliar.py): gráficos e BERTScore
+matplotlib==3.11.2
+bert-score==0.3.13
+torch==2.14.1
+transformers==5.18.0
