@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Avaliação do sistema de QA (arquivo separado do fluxo principal).
+"""Avaliador do sistema de QA: mede todos os resultados do main.py.
 
 Lê o ``resposta.json`` revisado, usa como gabarito só as respostas com ``"aprovada": true`` e roda cada pergunta nos
 quatro modos de busca (S0 sem busca, S1 BM25, S2 denso, S3 híbrido), com um ou mais modelos leitores. Para cada
@@ -21,13 +21,13 @@ combinação calcula:
                   absorveu o texto (não a capacidade de generalizar para textos novos).
 
 Uso:
-    python avaliar.py                                  # resposta.json, S0 a S3, leitor original (e qwen3-manual,
-                                                       # se o treinar.py já tiver criado)
-    python avaliar.py --modos S0 S3 --limite 30        # experimento mínimo
-    python avaliar.py --modelos modelo1 modelo2        # escolhe os leitores
-    python avaliar.py --sem-bertscore                  # pula o BERTScore (mais rápido)
-    python avaliar.py --sem-perplexidade               # pula a perplexidade
-    python avaliar.py --llama-perplexity /caminho/llama-perplexity   # se o llama.cpp não estiver em ~/llama.cpp
+    python avaliador.py                              # resposta.json, S0 a S3, leitor original (e qwen3-manual,
+                                                     # se o python main.py treinar já tiver criado)
+    python avaliador.py --modos S0 S3 --limite 30    # experimento mínimo
+    python avaliador.py --modelos modelo1 modelo2    # escolhe os leitores
+    python avaliador.py --sem-bertscore              # pula o BERTScore (mais rápido)
+    python avaliador.py --sem-perplexidade           # pula a perplexidade
+    python avaliador.py --llama-perplexity /caminho/llama-perplexity  # llama.cpp fora de ferramentas/llama.cpp
 
 Saída em ``resultados/<data-hora>/``: ``respostas.jsonl`` (cada resposta), ``metrics.csv`` (uma linha por modo e
 modelo), ``grafico.png`` e ``grafico_perplexidade.png`` (se o matplotlib estiver instalado) e ``ppl_texto.txt`` (o
@@ -41,7 +41,6 @@ import csv
 import json
 import random
 import re
-import shutil
 import statistics
 import string
 import subprocess
@@ -50,8 +49,8 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
-# Usa as funções do fluxo principal (busca, resposta, verificação), que está na mesma pasta.
-import qa_manual as qa
+# Usa as funções do sistema (busca, resposta, verificação), que está no main.py, na mesma pasta.
+import main as qa
 
 # Artigos e preposições ignorados na comparação de respostas (não mudam o sentido).
 PALAVRAS_IGNORADAS = {
@@ -78,7 +77,7 @@ def carregar_gabarito(caminho: Path, indice: qa.Indice) -> list[dict]:
         ErroUsuario se o arquivo não existir ou nenhum item estiver aprovado.
     """
     if not caminho.exists():
-        raise qa.ErroUsuario(f"{caminho.name} não encontrado; rode antes: python qa_manual.py responder")
+        raise qa.ErroUsuario(f"{caminho.name} não encontrado; rode antes: python main.py responder")
     itens = json.loads(caminho.read_text(encoding="utf-8"))
     gabarito = []
     for item in itens:
@@ -88,16 +87,16 @@ def carregar_gabarito(caminho: Path, indice: qa.Indice) -> list[dict]:
         sem_resposta = item.get("tipo") == "sem_resposta" or qa.absteve(item.get("resposta", ""))
         evidencia = []
         if not sem_resposta:
-            # O trecho de origem, se ainda existir no índice; senão, os trechos da seção e página indicadas.
-            if item.get("trecho") in indice.por_id:
+            # Os trechos que cobrem a página indicada (e a seção, se houver). O id do campo "trecho" só é usado
+            # quando não há página: se o manual for reindexado (outra divisão em trechos), o mesmo id passa a
+            # apontar para outro texto, e a página continua valendo.
+            pagina, secao = item.get("pagina"), str(item.get("secao") or "")
+            if pagina is not None:
+                na_pagina = [t for t in indice.trechos if t["pagina_inicio"] <= pagina <= t["pagina_fim"]]
+                da_secao = [t for t in na_pagina if t["secao_id"] == secao]
+                evidencia = [t["id"] for t in (da_secao or na_pagina)]
+            elif item.get("trecho") in indice.por_id:
                 evidencia = [item["trecho"]]
-            else:
-                evidencia = [
-                    t["id"]
-                    for t in indice.trechos
-                    if t["secao_id"] == str(item.get("secao"))
-                    and (item.get("pagina") is None or t["pagina_inicio"] <= item["pagina"] <= t["pagina_fim"])
-                ]
         gabarito.append(
             {
                 "id": str(item["id"]),
@@ -276,8 +275,8 @@ def normalizar_para_bertscore(texto: str) -> list[str]:
 # PERPLEXIDADE
 # ======================================================================================================================
 
-# Onde o README manda compilar o llama.cpp.
-LLAMA_PERPLEXITY = Path("~/llama.cpp/build/bin/llama-perplexity").expanduser()
+# Onde o README manda compilar o llama.cpp (ferramentas/llama.cpp, dentro do projeto).
+LLAMA_PERPLEXITY = qa.LLAMA_CPP / "build" / "bin" / "llama-perplexity"
 # Quantos trechos do manual entram no texto medido e a semente do sorteio (mesmo texto a cada execução).
 N_TRECHOS_PPL = 30
 SEMENTE_PPL = 42
@@ -301,33 +300,16 @@ def montar_texto_ppl(indice: qa.Indice, destino: Path) -> Path:
     return destino
 
 
-def gguf_do_ollama(modelo: str) -> Path:
-    """Acha o arquivo GGUF que o Ollama usa para um modelo.
+def liberar_memoria_do_ollama() -> None:
+    """Descarrega da memória os modelos que o Ollama mantém carregados depois da avaliação.
 
-    Entradas:
-        modelo: nome no Ollama.
-    Saídas:
-        caminho do arquivo (o "blob" do Ollama é um GGUF válido para o llama.cpp).
-    Erros:
-        ErroUsuario se o comando ollama não existir ou o modelo não estiver instalado.
+    O llama-perplexity carrega o modelo de novo, por conta própria; com o leitor e o bge-m3 ainda ocupando a memória
+    da GPU (o Ollama os mantém por alguns minutos), ele falha por falta de memória em Macs com pouca RAM.
     """
-    if shutil.which("ollama") is None:
-        raise qa.ErroUsuario("comando ollama não encontrado; informe o arquivo com --gguf modelo=arquivo.gguf")
-    # O "ollama show" precisa do servidor ligado.
-    qa.ligar_ollama()
-    # O Modelfile mostrado pelo Ollama tem uma linha "FROM /caminho/do/blob".
-    comando = ["ollama", "show", modelo, "--modelfile"]
-    saida = subprocess.run(comando, capture_output=True, text=True, check=False)
-    if saida.returncode != 0:
-        # Modelo ainda não baixado: baixa e tenta de novo.
-        subprocess.run(["ollama", "pull", modelo], check=False)
-        saida = subprocess.run(comando, capture_output=True, text=True, check=False)
-    if saida.returncode != 0:
-        raise qa.ErroUsuario(f"modelo {modelo} não encontrado no Ollama")
-    for caminho in re.findall(r"^FROM\s+(\S.*)$", saida.stdout, re.M):
-        if Path(caminho.strip()).is_file():
-            return Path(caminho.strip())
-    raise qa.ErroUsuario(f"não encontrei o arquivo GGUF de {modelo} na saída de `ollama show`")
+    cliente = qa.criar_cliente()
+    for modelo in cliente.ps().models:
+        # keep_alive=0 pede ao Ollama para descarregar o modelo agora.
+        cliente.generate(model=modelo.model, keep_alive=0)
 
 
 def medir_perplexidade(binario: Path, gguf: Path, texto: Path) -> float:
@@ -347,9 +329,10 @@ def medir_perplexidade(binario: Path, gguf: Path, texto: Path) -> float:
     # O llama.cpp termina com a linha "Final estimate: PPL = 7.1234 +/- ...".
     resultado = re.search(r"Final estimate:\s*PPL\s*=\s*([0-9.]+)", saida.stdout + saida.stderr)
     if saida.returncode != 0 or not resultado:
-        raise qa.ErroUsuario(
-            f"llama-perplexity falhou para {gguf.name}; o texto precisa de pelo menos {2 * CONTEXTO_PPL} tokens"
-        )
+        # Mostra a causa real: as últimas linhas de erro do llama.cpp (memória, texto curto demais...).
+        erros = [linha for linha in (saida.stdout + saida.stderr).splitlines() if "error" in linha.lower()]
+        causa = erros[-1].strip() if erros else f"o texto precisa de pelo menos {2 * CONTEXTO_PPL} tokens"
+        raise qa.ErroUsuario(f"llama-perplexity falhou para {gguf.name}: {causa}")
     return float(resultado.group(1))
 
 
@@ -379,16 +362,19 @@ def calcular_perplexidades(
         )
         return {}
     texto = montar_texto_ppl(indice, pasta / "ppl_texto.txt")
+    liberar_memoria_do_ollama()
     resultado = {}
+    barra = qa.Progresso(len(modelos), "Perplexidade")
     for modelo in modelos:
-        print(f"  perplexidade de {modelo} ...", file=sys.stderr)
+        barra.atualizar(modelo)
         try:
-            gguf = Path(ggufs[modelo]).expanduser() if modelo in ggufs else gguf_do_ollama(modelo)
+            gguf = Path(ggufs[modelo]).expanduser() if modelo in ggufs else qa.gguf_do_ollama(modelo)
             resultado[modelo] = round(medir_perplexidade(binario, gguf, texto), 3)
         except qa.ErroUsuario as erro:
             # Uma falha aqui não invalida as outras métricas: avisa e segue.
-            print(f"aviso: {erro}", file=sys.stderr)
+            print(f"\naviso: {erro}", file=sys.stderr)
             resultado[modelo] = None
+        barra.avancar()
     return resultado
 
 
@@ -419,20 +405,17 @@ def avaliar(
     """
     cliente = qa.criar_cliente()
     linhas = []
-    total = len(modos) * len(modelos) * len(gabarito)
-    feitos = 0
+    # Uma barra para todas as respostas: perguntas x modos x modelos.
+    barra = qa.Progresso(len(modos) * len(modelos) * len(gabarito), "Avaliação")
     with open(pasta / "respostas.jsonl", "w", encoding="utf-8") as arquivo:
         for modelo in modelos:
             for nome_modo in modos:
                 registros = []
                 for item in gabarito:
-                    feitos += 1
-                    print(
-                        f"  [{feitos}/{total}] {nome_modo} {modelo} pergunta {item['id']}",
-                        file=sys.stderr,
-                    )
+                    barra.atualizar(f"{nome_modo} {modelo} pergunta {item['id']}")
                     # Responde com o modo e o modelo da vez e guarda junto o gabarito da pergunta.
                     resultado = qa.responder(item["pergunta"], indice, cliente, qa.MODOS[nome_modo], modelo)
+                    barra.avancar()
                     registro = {
                         "modo_exp": nome_modo,
                         "modo": qa.MODOS[nome_modo],
@@ -442,6 +425,7 @@ def avaliar(
                     }
                     registros.append(registro)
                 # BERTScore em lote para as respostas deste modo e modelo.
+                barra.atualizar(f"{nome_modo} {modelo}: BERTScore")
                 calcular_bertscore(registros, avaliador)
                 # Grava as respostas deste modo e modelo (com o BERTScore de cada uma).
                 for registro in registros:
@@ -473,7 +457,8 @@ def gravar_metricas(linhas: list[dict], pasta: Path) -> None:
     except ImportError:
         return
     # Um grupo de barras por linha (modo + modelo), com EM, F1, BERTScore e Recall@5.
-    rotulos = [f"{linha['modo']}\n{linha['modelo']}" for linha in linhas]
+    # O nome do modelo vai sem a tag (qwen3:4b-instruct-2507-q4_K_M -> qwen3), para os rótulos não se sobreporem.
+    rotulos = [f"{linha['modo']}\n{linha['modelo'].split(':')[0]}" for linha in linhas]
     metricas = ["em", "f1", "bertscore_f1", "recall_at_5"]
     largura = 0.2
     figura, eixo = plt.subplots(figsize=(max(6, 1.4 * len(linhas)), 4))
@@ -537,7 +522,7 @@ def main(argv: list[str] | None = None) -> int:
     Saídas:
         código de saída: 0 sucesso, 2 erro de uso, 130 interrompido.
     """
-    parser = argparse.ArgumentParser(prog="avaliar.py", description="Métricas do sistema de QA.")
+    parser = argparse.ArgumentParser(prog="avaliador.py", description="Métricas do sistema de QA.")
     parser.add_argument("--respostas", default=str(qa.ARQ_RESPOSTAS), help="resposta.json revisado")
     parser.add_argument(
         "--modos",
@@ -583,7 +568,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Avaliando {len(gabarito)} perguntas aprovadas ...", file=sys.stderr)
         # Carrega o BERTScore antes de começar (o download do BERTimbau acontece só na primeira vez).
         avaliador = None if args.sem_bertscore else criar_bertscore()
-        # Sem --modelos: o leitor original e, se o treinar.py já o criou, o leitor ajustado.
+        # Sem --modelos: o leitor original e, se o comando treinar já o criou, o leitor ajustado.
         if args.modelos is None:
             args.modelos = [qa.MODELO_LEITOR] + ([qa.MODELO_TREINADO] if modelo_instalado(qa.MODELO_TREINADO) else [])
         print(f"Leitores: {', '.join(args.modelos)}", file=sys.stderr)

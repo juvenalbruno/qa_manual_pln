@@ -1,0 +1,2 @@
+modo,modelo,n,em,f1,bertscore_f1,recall_at_5,mrr_at_5,abst_correta,abst_indevida,citacao_valida,latencia_mediana_s
+S1,qwen3:4b-instruct-2507-q4_K_M,2,0.5,0.9,,1,0.75,,0,1,22.65

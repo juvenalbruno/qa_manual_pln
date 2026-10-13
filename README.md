@@ -10,21 +10,37 @@ Tudo roda na sua máquina: o manual não é enviado para nenhum serviço externo
 
 | Arquivo | Para que serve |
 |---|---|
-| `qa_manual.py` | O sistema de QA: responde perguntas sobre o manual e gera respostas para revisão |
-| `treinar.py` | Ajuste fino (LoRA) do leitor com o manual inteiro; cria o modelo `qwen3-manual` |
-| `avaliar.py` | Avaliação: EM, F1, BERTScore, Recall@5, perplexidade e outras; compara o leitor original com o ajustado |
+| `main.py` | O projeto inteiro: indexa o manual, responde perguntas, gera respostas para revisão e faz o ajuste fino (LoRA) que cria o modelo `qwen3-manual` |
+| `avaliador.py` | Avalia todos os resultados: EM, F1, BERTScore, Recall@5, perplexidade e outras; compara o leitor original com o ajustado |
 | `requirements.txt` | Bibliotecas Python |
+| `ferramentas/`, `.venv/`, `.cache/` | Python, llama.cpp, bibliotecas e caches do projeto (não vão para o git) |
 | `manual.pdf` | O manual (você coloca aqui; não vai para o git) |
 | `perguntas.json` | As perguntas de avaliação (você escreve; não vai para o git) |
 
 ## Instalação (macOS, uma vez)
 
+Tudo o que o projeto precisa para rodar fica dentro da pasta `qa-manual/`, no mesmo disco (SSD) do projeto: o Python
+e o llama.cpp em `ferramentas/`, as bibliotecas em `.venv/` e os caches (Hugging Face, PyTorch, Matplotlib, pip, uv)
+em `.cache/`. Os programas fixam esses caches ao iniciar; os comandos abaixo fazem o mesmo na instalação. Só o
+`uv`, o `cmake` e o Ollama são instalados no sistema.
+
 ```bash
-brew install python@3.11 ollama
+brew install uv ollama
 cd qa-manual                 # todos os comandos rodam de dentro desta pasta
-python3.11 -m venv .venv
+export UV_PYTHON_INSTALL_DIR="$PWD/ferramentas/python" UV_PYTHON_BIN_DIR="$PWD/ferramentas/python/bin" \
+       UV_CACHE_DIR="$PWD/.cache/uv"
+uv python install 3.11
+uv venv --python 3.11 --python-preference only-managed .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+uv pip install -r requirements.txt
+```
+
+Os modelos do Ollama ficam em `~/.ollama/models`. Para deixá-los também no SSD, aponte essa pasta para lá (com o
+Ollama desligado; `OLLAMA_MODELS` faz o mesmo papel):
+
+```bash
+mkdir -p /Volumes/juvenal_ssd/ollama/models
+ln -s /Volumes/juvenal_ssd/ollama/models ~/.ollama/models
 ```
 
 Não é preciso ligar o Ollama nem baixar modelos à mão: o programa liga o Ollama quando ele estiver desligado (e
@@ -33,14 +49,14 @@ desliga ao terminar) e baixa na primeira vez os modelos que faltarem (o leitor `
 O BERTimbau usado pelo BERTScore (~430 MB) também é baixado na primeira avaliação. São downloads de modelos: nenhum
 texto do manual sai da máquina.
 
-O treino e a perplexidade precisam de mais um passo, o llama.cpp (sem ele, o `avaliar.py` roda normalmente e deixa a
+O treino e a perplexidade precisam de mais um passo, o llama.cpp (sem ele, o `avaliador.py` roda normalmente e deixa a
 coluna `perplexidade` vazia):
 
 ```bash
 brew install cmake
-git clone --depth 1 https://github.com/ggml-org/llama.cpp ~/llama.cpp
-cmake -S ~/llama.cpp -B ~/llama.cpp/build -DGGML_CUDA=OFF
-cmake --build ~/llama.cpp/build --target llama-perplexity llama-export-lora llama-quantize -j
+git clone --depth 1 https://github.com/ggml-org/llama.cpp ferramentas/llama.cpp
+cmake -S ferramentas/llama.cpp -B ferramentas/llama.cpp/build -DGGML_CUDA=OFF
+cmake --build ferramentas/llama.cpp/build --target llama-perplexity llama-export-lora llama-quantize -j
 ```
 
 No Linux, instale o Ollama com `curl -fsSL https://ollama.com/install.sh | sh`.
@@ -50,7 +66,7 @@ Dropbox, OneDrive ou Google Drive): o manual e o índice iriam para a nuvem.
 
 ## Uso
 
-Coloque o `manual.pdf` ao lado do `qa_manual.py`. Em cada terminal novo, entre na pasta e ative o ambiente:
+Coloque o `manual.pdf` ao lado do `main.py`. Em cada terminal novo, entre na pasta e ative o ambiente:
 
 ```bash
 cd qa-manual
@@ -60,27 +76,32 @@ source .venv/bin/activate
 Fluxo da avaliação:
 
 ```bash
-python treinar.py                # 1. ajuste fino com o manual inteiro (uma vez)
-python qa_manual.py responder    # 2. perguntas.json -> resposta.json
+python main.py treinar           # 1. ajuste fino com o manual inteiro (uma vez)
+python main.py responder         # 2. perguntas.json -> resposta.json
                                  # 3. revisar o resposta.json à mão
-python avaliar.py                # 4. métricas: leitor original x ajustado
+python avaliador.py              # 4. métricas: leitor original x ajustado
 ```
 
 Os passos 1 e 2 são independentes (a ordem entre eles não importa); os dois precisam estar prontos antes do 4. Na
 primeira vez, o comando que rodar primeiro também indexa o manual, o que leva alguns minutos (e de novo sempre que o
-`manual.pdf` mudar).
+`manual.pdf` mudar ou que a divisão em trechos mudar no código, pela constante `VERSAO_INDICE`).
+
+As tabelas do manual são lidas célula a célula (`find_tables` do PyMuPDF): cada linha vira um parágrafo no formato
+`[Tabela 3, INFRAÇÕES DO ARRENDATÁRIO] Não conformidade: ...; RIP: NÃO; Prazo: ...`, inclusive quando a tabela
+continua na página seguinte. O `main.py` está organizado na ordem do processamento (etapas 0 a 8), com um mapa das
+funções no início do arquivo.
 
 Para fazer perguntas, a qualquer momento:
 
 ```bash
-python qa_manual.py                                   # com o leitor original
-python qa_manual.py perguntar --modelo qwen3-manual   # com o leitor ajustado
+python main.py                                   # com o leitor original
+python main.py perguntar --modelo qwen3-manual   # com o leitor ajustado
 ```
 
 ### 1. Treinar
 
 ```bash
-python treinar.py
+python main.py treinar
 ```
 
 Ajusta o leitor ao manual (ajuste fino LoRA, em Mac com Apple Silicon, via MLX). Usa o manual inteiro: cada trecho
@@ -92,13 +113,13 @@ por 2 passadas sobre todos eles. No fim, o modelo ajustado é registrado no Olla
   treinadas voltam a ser compactadas em 4 bits. O pico é de ~6 GB livres durante o treino e, no fim, o `qwen3-manual`
   ocupa ~2,5 GB (o mesmo tamanho do leitor original). Os arquivos intermediários são apagados.
 - Baixa os pesos MLX do leitor (~2,3 GB) para treinar e apaga ao terminar. Nenhum texto do manual sai da máquina.
-- Treino mais curto: `python treinar.py --epocas 1`.
+- Treino mais curto: `python main.py treinar --epocas 1`.
 
 Os dados e o adaptador ficam em `modelos/` (não vai para o git).
 
 ### 2 e 3. Montar o gabarito
 
-**a) Escreva o `perguntas.json`** ao lado do `qa_manual.py` (de 50 a 100 perguntas; inclua algumas que o manual
+**a) Escreva o `perguntas.json`** ao lado do `main.py` (de 50 a 100 perguntas; inclua algumas que o manual
 não responde, para medir se o sistema sabe dizer que não sabe):
 
 ```json
@@ -108,7 +129,7 @@ não responde, para medir se o sistema sabe dizer que não sabe):
 ]
 ```
 
-**b) Rode `python qa_manual.py responder`.** Cria o `resposta.json` com uma resposta proposta para cada pergunta,
+**b) Rode `python main.py responder`.** Cria o `resposta.json` com uma resposta proposta para cada pergunta,
 escrita pelo `llama3.2:3b` (que não é o leitor avaliado: assim o leitor não é comparado com as próprias respostas).
 Ele não sobrescreve um `resposta.json` existente (use `--forcar` para gerar de novo).
 
@@ -136,7 +157,7 @@ Ele não sobrescreve um `resposta.json` existente (use `--forcar` para gerar de 
 ### 4. Avaliar
 
 ```bash
-python avaliar.py
+python avaliador.py
 ```
 
 Roda cada pergunta aprovada nos quatro modos de busca, **S0** sem busca (o modelo responde sozinho), **S1** BM25
@@ -177,11 +198,11 @@ Opções, se precisar:
 | `--modos S0 S3 --limite 30` | Versão rápida: só dois modos e 30 perguntas |
 | `--modelos modelo1 modelo2` | Escolhe os leitores (padrão: o leitor original e, se existir, `qwen3-manual`) |
 | `--sem-bertscore`, `--sem-perplexidade` | Pula essas métricas |
-| `--llama-perplexity caminho` | Se o llama.cpp não estiver em `~/llama.cpp` |
+| `--llama-perplexity caminho` | Se o llama.cpp não estiver em `ferramentas/llama.cpp` |
 
 ### Fazer perguntas
 
-`python qa_manual.py` abre o modo interativo:
+`python main.py` abre o modo interativo:
 
 ```
 Pergunta:
@@ -198,11 +219,11 @@ Linha vazia ou `sair` encerra.
 | Mensagem | O que fazer |
 |---|---|
 | `Ollama não instalado` | `brew install ollama` |
-| `manual não encontrado` | Coloque o `manual.pdf` ao lado do `qa_manual.py` |
+| `manual não encontrado` | Coloque o `manual.pdf` ao lado do `main.py` |
 | `PDF sem texto selecionável` | O PDF é escaneado: rode OCR antes (ex.: `ocrmypdf manual.pdf manual_ocr.pdf`) |
 | `nenhuma resposta aprovada` | Marque `"aprovada": true` no `resposta.json` |
 | `llama-perplexity não encontrado` | Compile o llama.cpp (instalação) ou use `--llama-perplexity` |
-| `... não encontrado em ~/llama.cpp` | Baixe e compile o llama.cpp (instalação) |
+| `... não encontrado em ferramentas/llama.cpp` | Baixe e compile o llama.cpp (instalação) |
 | `mlx-lm não instalado` | O treino só roda em Mac com Apple Silicon |
 
 ## Referências

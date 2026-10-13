@@ -1,17 +1,24 @@
 # Dados do manual (confidenciais): nunca versionar
 # manual.pdf
-*.pdf
+# *.pdf
 # perguntas.json
 # resposta.json
-indice/
-resultados/
+# indice/
+# resultados/
 
-# Ambiente
+# Ambiente (Python, llama.cpp e caches ficam dentro do projeto, no SSD)
 .venv
 .venv/
+ferramentas/
+.cache/
+.ruff_cache/
 *.nosync/
 __pycache__/
 .DS_Store
 
 # Treino (contém texto do manual e modelos grandes)
 modelos/
+
+# Saída da execução em segundo plano (barra de progresso)
+progresso.log
+resposta.antes.json
